@@ -1,108 +1,121 @@
+// Custom Maze game on Adafruit's 32x32 RGB LED matrix:
+// http://www.adafruit.com/products/607
+// 32x32 MATRICES DO NOT WORK WITH ARDUINO UNO or METRO 328.
+
+// Written by Bryan Luu.
+// BSD license, all text above must be included in any redistribution.
+
+#include <RGBmatrixPanel.h>
+#include <limits.h>
 #include <map>
 
-namespace Test {
-  void sayHello() {
-    Serial.println("Hello World!");
-  }
-}
+// Most of the signal pins are configurable, but the CLK pin has some
+// special constraints.  On 8-bit AVR boards it must be on PORTB...
+// Pin 11 works on the Arduino Mega.  On 32-bit SAMD boards it must be
+// on the same PORT as the RGB data pins (D2-D7)...
+// Pin 8 works on the Adafruit Metro M0 or Arduino Zero,
+// Pin A4 works on the Adafruit Metro M4 (if using the Adafruit RGB
+// Matrix Shield, cut trace between CLK pads and run a wire to A4).
 
-void sayHello() {
-  Serial.println("Hello!");
-}
+#define CLK  8   // USE THIS ON ADAFRUIT METRO M0, etc.
+//#define CLK A4 // USE THIS ON METRO M4 (not M0)
+//#define CLK 11 // USE THIS ON ARDUINO MEGA
+#define OE   9
+#define LAT 10
+#define A   A0
+#define B   A1
+#define C   A2
+#define D   A3
 
-class Dog {
-  String name;
-  int weight;
+RGBmatrixPanel matrix(A, B, C, D, CLK, LAT, OE, true);
 
-public:
-  Dog();
-
-  void setName(const String dogsName);
-  void setWeight(int dogsWeight);
-  void print() const;
-};
-
-Dog myDog;
-
-template<class T>
-class LinkedList {
-  T value;
-  LinkedList<T> * next;
-  int size;
-  
-public:
-  LinkedList<T>(T item) {
-    value = item;
-    size = 1;
-    next = NULL;
-  }
-
-  void insert(T item)
-  {
-    next = new LinkedList<T>(item);
-    size++;
-  }
-  
-  int getSize()
-  {
-    return size;
-  }
-
-  void print()
-  {
-    LinkedList<T> * curr = this;
-    String out;
-    for (int i = 0; i < size; i++)
-    {
-      out += String(curr->value);
-      curr = curr->next;
-      if (i < size - 1)
-      {
-        out += " -> ";
-      }
-    }
-    Serial.println(out);
-  }
-
-  ~LinkedList<T>()
-  {
-    delete next;
-  }
-};
-
-LinkedList<int> list(0);
+void buildMaze();
 
 void setup() {
-  // put your setup code here, to run once:
-  Serial.begin(9600);
-  myDog.setName("Barks");
-  myDog.setWeight(10);
-  list.insert(1);
+  randomSeed(analogRead(0));
+  matrix.begin();
+  buildMaze();
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-  delay(1000);
-  myDog.print();
-  list.print();
+  // Clear background
+  matrix.fillScreen(0);
+
+#if !defined(__AVR__)
+  // On non-AVR boards, delay slightly so screen updates aren't too quick.
+  delay(20);
+#endif
+
+  // Update display
+  matrix.swapBuffers(false);
 }
 
-Dog::Dog()
-{
+// ########## POSITION CODE ##########
+
+class Position {
+
+private:
+  int x; // the horizontal position in the maze
+  int y; // the vertical position in the maze
+
+public:
+  Position(int x, int y)
+  {
+    this->x = x;
+    this->y = y;
+  }
+
+  int getX()
+  {
+    return x;
+  }
+
+  int getY()
+  {
+    return y;
+  }
+};
+
+// ########## GRAPH CODE ##########
+
+class Graph {
+private:
+  class Vertex;
+  class Edge;
   
-}
+  class Vertex {
+  public:
+    Position * pos; // vertex position
+    Edge * edgesLeaving[4] = {}; // edges leaving this vertex
+    int cheapestEdgeCost = INT_MAX;
+    Edge * cheapestEdge = NULL;
+  
+    Vertex(Position * pos)
+    {
+      this->pos = pos;
+    }
+  };
+  
+  class Edge {
+  public:
+    Vertex * source;
+    Vertex * target;
+    int weight;
+  
+    Edge(Vertex * source, Vertex * target, int weight)
+    {
+      this->source = source;
+      this->target = target;
+      this->weight = weight;
+    }
+  };
 
-void Dog::setName(const String dogsName)
-{
-  name = dogsName;
-}
+public:
+  
+};
 
-void Dog::setWeight(int dogsWeight)
-{
-  weight = dogsWeight;
-}
 
-void Dog::print() const
-{
-  Serial.println("Dog is " + name + " and weighs " + String(weight));
+void buildMaze() {
+  // build the maze!
+  Position pos = Position(3, 4);
 }
