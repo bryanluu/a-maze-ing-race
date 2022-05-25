@@ -52,14 +52,14 @@ void loop() {
 
 // ########## POSITION CODE ##########
 
-class Position {
+class Point {
 
 private:
   int x; // the horizontal position in the maze
   int y; // the vertical position in the maze
 
 public:
-  Position(int x, int y)
+  Point(int x, int y)
   {
     this->x = x;
     this->y = y;
@@ -85,12 +85,12 @@ private:
   
   class Vertex {
   public:
-    Position * pos; // vertex position
+    Point * pos; // vertex position
     Edge * edgesLeaving[4] = {}; // edges leaving this vertex
     int cheapestEdgeCost = INT_MAX;
     Edge * cheapestEdge = NULL;
   
-    Vertex(Position * pos)
+    Vertex(Point * pos)
     {
       this->pos = pos;
     }
@@ -117,5 +117,5 @@ public:
 
 void buildMaze() {
   // build the maze!
-  Position pos = Position(3, 4);
+  Point pos = Point(3, 4);
 }
