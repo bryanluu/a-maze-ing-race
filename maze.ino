@@ -29,6 +29,13 @@
 
 RGBmatrixPanel matrix(A, B, C, D, CLK, LAT, OE, true);
 
+// ########## MAIN CODE ##########
+
+#define MATRIX_WIDTH 32
+#define MATRIX_HEIGHT 32
+#define MAZE_WIDTH (MATRIX_WIDTH - 1)/2
+#define MAZE_HEIGHT (MATRIX_HEIGHT - 1)/2
+
 void buildMaze();
 
 void setup() {
