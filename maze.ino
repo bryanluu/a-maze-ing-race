@@ -102,6 +102,8 @@ namespace std {
 
 // ########## GRAPH CODE ##########
 
+#define MAX_NEIGHBORS 4
+
 class Graph {
 private:
   class Vertex;
@@ -112,9 +114,10 @@ private:
   class Vertex {
   public:
     Point * pos; // vertex position
-    Edge * edgesLeaving[4] = {}; // edges leaving this vertex
+    Edge * edgesLeaving[MAX_NEIGHBORS] = {}; // edges leaving this vertex
     int cheapestEdgeCost = INT_MAX;
     Edge * cheapestEdge = NULL;
+    unsigned char n_edges = 0;
   
     Vertex(Point * pos)
     {
@@ -166,6 +169,65 @@ public:
       return false;
 
     vertices[*pos] = vertex_ptr(new Vertex(pos));
+    return true;
+  }
+
+  /**
+   * Insert a new directed edge with a positive edge weight into the graph.
+   * 
+   * @param source the position of the source vertex for the edge
+   * @param target the position of the target vertex for the edge
+   * @param weight the weight for the edge (has to be a positive integer)
+   * @return true if the edge could be inserted or its weight updated, false if the edge with the
+   *         same weight was already in the graph
+   */
+  bool insertEdge(Point *source, Point *target, int weight)
+  {
+    vertex_list::const_iterator sv = vertices.find(*source);
+    vertex_list::const_iterator tv = vertices.find(*target);
+
+    // source or target vertices invalid
+    if (sv == vertices.end() || tv == vertices.end())
+      return false;
+
+    // invalid negative weight
+    if (weight < 0)
+      return false;
+
+    // handle cases where edge already exists between these points
+    bool alreadyExists = false;
+    Edge * e;
+    for (int i = 0; i < MAX_NEIGHBORS; i++)
+    {
+      e = sv->second->edgesLeaving[i];
+      // if an edge to target is found from source
+      if (e->target == tv->second)
+      {
+        if (e->weight == weight)
+          return false; // edge already exists
+        else
+          e->weight = weight; // otherwise update weight of existing edge
+        alreadyExists = true;
+        break;
+      }
+      e = tv->second->edgesLeaving[i];
+      // if an edge to target is found from source
+      if (e->target == sv->second)
+      {
+        if (e->weight == weight)
+          return false; // edge already exists
+        else
+          e->weight = weight; // otherwise update weight of existing edge
+        alreadyExists = true;
+        break;
+      }
+    }
+    if (!alreadyExists)
+    {
+      // otherwise add new edge to source vertex
+      sv->second->edgesLeaving[sv->second->n_edges++] = new Edge(sv->second, tv->second, weight);
+      tv->second->edgesLeaving[sv->second->n_edges++] = new Edge(tv->second, sv->second, weight);
+    }
     return true;
   }
 };
