@@ -7,7 +7,8 @@
 
 #include <RGBmatrixPanel.h>
 #include <limits.h>
-#include <map>
+#include <unordered_map>
+#include <memory>
 
 // Most of the signal pins are configurable, but the CLK pin has some
 // special constraints.  On 8-bit AVR boards it must be on PORTB...
@@ -105,6 +106,8 @@ class Graph {
 private:
   class Vertex;
   class Edge;
+
+  typedef std::shared_ptr<Vertex> vertex_ptr;
   
   class Vertex {
   public:
@@ -117,15 +120,22 @@ private:
     {
       this->pos = pos;
     }
+
+    ~Vertex() {
+      delete pos;
+      for (int i=0; i<4; i++)
+        delete(edgesLeaving[i]);
+      delete(cheapestEdge);
+    }
   };
   
   class Edge {
   public:
-    Vertex * source;
-    Vertex * target;
+    vertex_ptr source;
+    vertex_ptr target;
     int weight;
   
-    Edge(Vertex * source, Vertex * target, int weight)
+    Edge(vertex_ptr source, vertex_ptr target, int weight)
     {
       this->source = source;
       this->target = target;
@@ -134,11 +144,34 @@ private:
   };
 
 public:
+  typedef std::unordered_map<Point, vertex_ptr> vertex_list;
   
+  // hold graph vertices
+  vertex_list vertices = vertex_list();
+
+  Graph() {
+
+  }
+
+  /**
+   * Insert a new vertex into the graph.
+   * 
+   * @param pos the position stored in the new vertex
+   * @return true if the position can be inserted as a new vertex, false if it is already in the graph
+   */
+  bool insertVertex(Point * pos)
+  {
+    vertex_list::const_iterator got = vertices.find(*pos);
+    if (got == vertices.end())
+      return false;
+
+    vertices[*pos] = vertex_ptr(new Vertex(pos));
+    return true;
+  }
 };
 
 
 void buildMaze() {
   // build the maze!
-  Point pos = Point(3, 4);
+  Graph g;
 }
