@@ -72,16 +72,32 @@ public:
     this->y = y;
   }
 
-  int getX()
+  int getX() const
   {
     return x;
   }
 
-  int getY()
+  int getY() const
   {
     return y;
   }
+
+  bool operator==(const Point &other) const
+  {
+    return (x == other.x) && (y == other.y);
+  }
 };
+
+namespace std {
+  template<>
+  struct hash<Point>
+  {
+    std::size_t operator()(const Point& p) const
+    {
+      return p.getX() + MAZE_WIDTH*(p.getY());
+    }
+  };
+}
 
 // ########## GRAPH CODE ##########
 
