@@ -235,5 +235,25 @@ public:
 
 void buildMaze() {
   // build the maze!
-  Graph g;
+  Graph graph;
+  Point * grid[MAZE_WIDTH][MAZE_HEIGHT];
+
+  for (int r = 0; r < MAZE_HEIGHT; r++)
+  {
+    for (int c = 0; c < MAZE_WIDTH; c++)
+    {
+      Point *p;
+      if (grid[r][c] != NULL)
+      {
+        p = new Point(c, r);
+        grid[r][c] = p;
+        graph.insertVertex(p);
+      }
+
+      if (c > 0) // connect to left neighbor
+        graph.insertEdge(p, grid[r][c - 1], rand());
+      if (r > 0) // connect to top neighbor
+        graph.insertEdge(p, grid[r - 1][c], rand());
+    }
+  }
 }
