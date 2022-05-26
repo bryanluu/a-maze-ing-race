@@ -88,7 +88,6 @@ void loop() {
 #define NONE (-1)
 
 struct node;
-struct edge;
 
 struct node {
   byte pos; // the position in the maze
