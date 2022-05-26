@@ -60,14 +60,20 @@ void loop() {
 
 // ########## POSITION CODE ##########
 
+// encodes the position given x and y
+#define ENCODE(x, y) ((x) + (MAZE_WIDTH)*(y))
+// decodes the x value of position
+#define GET_X(p) ((p) % (MAZE_WIDTH))
+// decodes the y value of position
+#define GET_Y(p) ((p) / (MAZE_WIDTH))
+
 struct point {
 public:
-  byte x; // the horizontal position in the maze
-  byte y; // the vertical position in the maze
+  byte pos; // the position in the maze
 
   bool operator==(const point &other) const
   {
-    return (x == other.x) && (y == other.y);
+    return (pos == other.pos);
   }
 };
 
@@ -77,7 +83,7 @@ namespace std {
   {
     std::size_t operator()(const point& p) const
     {
-      return p.x + MAZE_WIDTH*(p.y);
+      return p.pos;
     }
   };
 }
@@ -226,8 +232,7 @@ void buildMaze() {
       if (r > 14 || c > 14)
         break;
 
-      maze[r][c].x = c;
-      maze[r][c].y = r;
+      maze[r][c].pos = ENCODE(c, r);
       graph.insertVertex(&maze[r][c]);
 
       // if (c > 0) // connect to left neighbor
@@ -256,8 +261,8 @@ void displayMaze() {
   byte x, y;
   for (auto it = graph.vertices.begin(); it != graph.vertices.end(); it++)
   {
-    x = it->first.x;
-    y = it->first.y;
+    x = GET_X(it->first.pos);
+    y = GET_Y(it->first.pos);
     byte r = 2*y + 1;
     byte c = 2*x + 1;
     grid[r][c] = matrix.Color333(7, 7, 7); // color the vertex node
@@ -267,10 +272,10 @@ void displayMaze() {
     byte x1, y1, x2, y2;
     for (byte i = 0; i < it->second->n_edges; i++)
     {
-      x1 = it->second->edgesLeaving[i]->source->pos->x;
-      y1 = it->second->edgesLeaving[i]->source->pos->y;
-      x2 = it->second->edgesLeaving[i]->target->pos->x;
-      y2 = it->second->edgesLeaving[i]->target->pos->y;
+      x1 = GET_X(it->second->edgesLeaving[i]->source->pos->pos);
+      y1 = GET_Y(it->second->edgesLeaving[i]->source->pos->pos);
+      x2 = GET_X(it->second->edgesLeaving[i]->target->pos->pos);
+      y2 = GET_Y(it->second->edgesLeaving[i]->target->pos->pos);
       r = y1 + y2 + 1;
       c = x1 + x2 + 1;
       grid[r][c] = matrix.Color333(7, 7, 7);
