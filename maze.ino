@@ -226,7 +226,7 @@ public:
     {
       // otherwise add new edge to source vertex
       sv->second->edgesLeaving[sv->second->n_edges++] = new Edge(sv->second, tv->second, weight);
-      tv->second->edgesLeaving[sv->second->n_edges++] = new Edge(tv->second, sv->second, weight);
+      tv->second->edgesLeaving[tv->second->n_edges++] = new Edge(tv->second, sv->second, weight);
     }
     return true;
   }
