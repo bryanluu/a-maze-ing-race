@@ -34,10 +34,12 @@ RGBmatrixPanel matrix(A, B, C, D, CLK, LAT, OE, true);
 
 #define MATRIX_WIDTH 32
 #define MATRIX_HEIGHT 32
-#define MAZE_WIDTH (MATRIX_WIDTH - 1)/2
-#define MAZE_HEIGHT (MATRIX_HEIGHT - 1)/2
+#define MAZE_WIDTH ((MATRIX_WIDTH) - 1)/2
+#define MAZE_HEIGHT ((MATRIX_HEIGHT) - 1)/2
+#define MAZE_CAPACITY ((MAZE_WIDTH) * (MAZE_HEIGHT))
 
 void buildMaze();
+void displayMaze();
 
 void setup() {
   randomSeed(analogRead(0));
@@ -48,6 +50,9 @@ void setup() {
 void loop() {
   // Clear background
   matrix.fillScreen(0);
+
+  displayMaze();
+  delay(100);
 
 #if !defined(__AVR__)
   // On non-AVR boards, delay slightly so screen updates aren't too quick.
@@ -68,35 +73,91 @@ void loop() {
 #define GET_Y(p) ((p) / (MAZE_WIDTH))
 // max number of neighbors this node can have
 #define MAX_NEIGHBORS 4
+// directional indices
+#define TOP 3
+#define LEFT 2
+#define BOTTOM 1
+#define RIGHT 0
+#define NONE (-1)
 
 struct node;
 struct edge;
 
 struct node {
   byte pos; // the position in the maze
-  edge * edgesLeaving[MAX_NEIGHBORS] = {}; // edges leaving this vertex
+  int edges[MAX_NEIGHBORS]; // neighboring edges of this node
   int cheapestEdgeCost = INT_MAX;
-  edge * cheapestEdge = NULL;
   unsigned char n_edges = 0;
+
+  node ()
+  {
+    for (byte i = 0; i < MAX_NEIGHBORS; i++)
+      edges[i] = NONE;
+  }
 
   bool operator==(const node &other) const
   {
     return (pos == other.pos);
   }
-  
-};
 
-struct edge {
-  node * source;
-  node * target;
-  int weight;
-
-  edge (node * src, node * tgt, int wt)
+  /**
+   * @brief Find relative position from other
+   * 
+   * @param other 
+   * @return byte - a direction index
+   */
+  byte operator-(const node &other) const
   {
-    source = src;
-    target = tgt;
-    weight = wt;
+    short dx = GET_X(pos) - GET_X(other.pos);
+    short dy = GET_Y(pos) - GET_Y(other.pos);
+    if (dx == 0)
+    {
+      if (dy == 1)
+        return BOTTOM;
+      else if (dy == -1)
+        return TOP;
+    }
+    else if (dy == 0)
+    {
+      if (dx == 1)
+        return RIGHT;
+      else if (dx == -1)
+        return LEFT;
+    }
+    return NONE;
   }
+
+  /**
+   * @brief Find the position by relative direction
+   * 
+   * @param dir 
+   * @return byte - the position in the relative direction
+   */
+  byte pos_relative(char dir)
+  {
+    short dx, dy;
+    dx = 0;
+    dy = 0;
+    switch (dir)
+    {
+      case TOP:
+        dy = -1;
+        break;
+      case BOTTOM:
+        dy = 1;
+        break;
+      case LEFT:
+        dx = -1;
+        break;
+      case RIGHT:
+        dx = 1;
+        break;
+      default:
+        return NONE;
+    }
+    return ENCODE(GET_X(pos) + dx, GET_Y(pos) + dy);
+  }
+  
 };
 
 namespace std {
@@ -133,42 +194,10 @@ struct graph {
     if (weight < 0)
       return false;
 
-    // handle cases where edge already exists between these points
-    bool alreadyExists = false;
     node * source = &vertices[s];
     node * target = &vertices[t];
-    edge * e;
-    for (byte i = 0; i < MAX_NEIGHBORS; i++)
-    {
-      e = source->edgesLeaving[i];
-      // if an edge to target is found from source
-      if (e->target == target)
-      {
-        if (e->weight == weight)
-          return false; // edge already exists
-        else
-          e->weight = weight; // otherwise update weight of existing edge
-        alreadyExists = true;
-        break;
-      }
-      e = target->edgesLeaving[i];
-      // if an edge to target is found from source
-      if (e->target == source)
-      {
-        if (e->weight == weight)
-          return false; // edge already exists
-        else
-          e->weight = weight; // otherwise update weight of existing edge
-        alreadyExists = true;
-        break;
-      }
-    }
-    if (!alreadyExists)
-    {
-      // otherwise add new edge to source vertex
-      source->edgesLeaving[source->n_edges++] = new edge(source, target, weight);
-      target->edgesLeaving[target->n_edges++] = new edge(target, source, weight);
-    }
+    source->edges[(*target) - (*source)] = weight;
+    target->edges[(*source) - (*target)] = weight;
     return true;
   }
 };
@@ -186,7 +215,15 @@ void buildMaze() {
     for (byte c = 0; c < MAZE_WIDTH; c++)
     {
       byte p = ENCODE(c, r);
-      maze_g.vertices[p].pos = p; // set the pos of the node
+      node * v = &maze_g.vertices[p];
+      v->pos = p; // set the pos of the node
+
+      // connect to top node
+      if (r > 0)
+        maze_g.insertEdge(p, ENCODE(c, r-1), rand());
+      // connect to left node
+      if (c > 0)
+        maze_g.insertEdge(p, ENCODE(c-1, r), rand());
     }
   }
 }
@@ -215,16 +252,18 @@ void displayMaze() {
     grid[r][c] = matrix.Color333(7, 7, 7); // color the vertex node
 
     // color the edge nodes
-    byte x1, y1, x2, y2;
+    byte x2, y2;
     node * v = &maze_g.vertices[p];
-    for (byte i = 0; i < v->n_edges; i++)
+    for (byte i = 0; i < MAX_NEIGHBORS; i++)
     {
-      x1 = GET_X(v->edgesLeaving[i]->source->pos);
-      y1 = GET_Y(v->edgesLeaving[i]->source->pos);
-      x2 = GET_X(v->edgesLeaving[i]->target->pos);
-      y2 = GET_Y(v->edgesLeaving[i]->target->pos);
-      r = y1 + y2 + 1;
-      c = x1 + x2 + 1;
+      if (v->edges[i] == NONE)
+        continue;
+
+      node * u = &maze_g.vertices[v->pos_relative(i)];
+      x2 = GET_X(u->pos);
+      y2 = GET_Y(u->pos);
+      r = y + y2 + 1;
+      c = x + x2 + 1;
       grid[r][c] = matrix.Color333(7, 7, 7);
     }
   }
