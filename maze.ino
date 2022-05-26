@@ -32,11 +32,18 @@ RGBmatrixPanel matrix(A, B, C, D, CLK, LAT, OE, true);
 
 // ########## MAIN CODE ##########
 
-#define MATRIX_WIDTH 32
-#define MATRIX_HEIGHT 32
+#define MATRIX_WIDTH 31
+#define MATRIX_HEIGHT 31
 #define MAZE_WIDTH ((MATRIX_WIDTH) - 1)/2
 #define MAZE_HEIGHT ((MATRIX_HEIGHT) - 1)/2
 #define MAZE_CAPACITY ((MAZE_WIDTH) * (MAZE_HEIGHT))
+
+// colors
+#define BLACK (matrix.Color333(0, 0, 0))
+#define WHITE (matrix.Color333(7, 7, 7))
+#define RED (matrix.Color333(7, 0, 0))
+#define GREEN (matrix.Color333(0, 7, 0))
+#define BLUE (matrix.Color333(0, 0, 7))
 
 void buildMaze();
 void displayMaze();
@@ -239,7 +246,7 @@ void displayMaze() {
   {
     for (byte c = 0; c < MATRIX_WIDTH; c++)
     {
-      grid[r][c] = matrix.Color333(0, 0, 0);
+      grid[r][c] = RED;
     }
   }
   byte x, y;
@@ -249,7 +256,7 @@ void displayMaze() {
     y = GET_Y(p);
     byte r = 2*y + 1;
     byte c = 2*x + 1;
-    grid[r][c] = matrix.Color333(7, 7, 7); // color the vertex node
+    grid[r][c] = BLACK; // color the vertex node
 
     // color the edge nodes
     byte x2, y2;
@@ -264,7 +271,7 @@ void displayMaze() {
       y2 = GET_Y(u->pos);
       r = y + y2 + 1;
       c = x + x2 + 1;
-      grid[r][c] = matrix.Color333(7, 7, 7);
+      grid[r][c] = BLACK;
     }
   }
   for (byte r = 0; r < MATRIX_HEIGHT; r++)
