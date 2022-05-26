@@ -60,30 +60,12 @@ void loop() {
 
 // ########## POSITION CODE ##########
 
-class Point {
-
-private:
-  int x; // the horizontal position in the maze
-  int y; // the vertical position in the maze
-
+struct point {
 public:
-  Point(int x, int y)
-  {
-    this->x = x;
-    this->y = y;
-  }
+  byte x; // the horizontal position in the maze
+  byte y; // the vertical position in the maze
 
-  int getX() const
-  {
-    return x;
-  }
-
-  int getY() const
-  {
-    return y;
-  }
-
-  bool operator==(const Point &other) const
+  bool operator==(const point &other) const
   {
     return (x == other.x) && (y == other.y);
   }
@@ -91,11 +73,11 @@ public:
 
 namespace std {
   template<>
-  struct hash<Point>
+  struct hash<point>
   {
-    std::size_t operator()(const Point& p) const
+    std::size_t operator()(const point& p) const
     {
-      return p.getX() + MAZE_WIDTH*(p.getY());
+      return p.x + MAZE_WIDTH*(p.y);
     }
   };
 }
@@ -113,13 +95,13 @@ private:
   
   class Vertex {
   public:
-    Point * pos; // vertex position
+    point * pos; // vertex position
     Edge * edgesLeaving[MAX_NEIGHBORS] = {}; // edges leaving this vertex
     int cheapestEdgeCost = INT_MAX;
     Edge * cheapestEdge = NULL;
     unsigned char n_edges = 0;
   
-    Vertex(Point * pos)
+    Vertex(point * pos)
     {
       this->pos = pos;
     }
@@ -147,14 +129,10 @@ private:
   };
 
 public:
-  typedef std::unordered_map<Point, vertex_ptr> vertex_list;
+  typedef std::unordered_map<point, vertex_ptr> vertex_list;
   
   // hold graph vertices
   vertex_list vertices = vertex_list();
-
-  Graph() {
-
-  }
 
   /**
    * Insert a new vertex into the graph.
@@ -162,10 +140,10 @@ public:
    * @param pos the position stored in the new vertex
    * @return true if the position can be inserted as a new vertex, false if it is already in the graph
    */
-  bool insertVertex(Point * pos)
+  bool insertVertex(point * pos)
   {
     vertex_list::const_iterator got = vertices.find(*pos);
-    if (got == vertices.end())
+    if (got != vertices.end()) // vertex already exists
       return false;
 
     vertices[*pos] = vertex_ptr(new Vertex(pos));
@@ -181,7 +159,7 @@ public:
    * @return true if the edge could be inserted or its weight updated, false if the edge with the
    *         same weight was already in the graph
    */
-  bool insertEdge(Point *source, Point *target, int weight)
+  bool insertEdge(point *source, point *target, int weight)
   {
     vertex_list::const_iterator sv = vertices.find(*source);
     vertex_list::const_iterator tv = vertices.find(*target);
@@ -232,28 +210,77 @@ public:
   }
 };
 
+Graph graph; // graph of the maze
+point maze[MAZE_HEIGHT][MAZE_WIDTH]; // points on the maze
 
+/**
+ * @brief Builds the maze graph
+ * 
+ */
 void buildMaze() {
   // build the maze!
-  Graph graph;
-  Point * grid[MAZE_WIDTH][MAZE_HEIGHT];
-
-  for (int r = 0; r < MAZE_HEIGHT; r++)
+  for (byte r = 0; r < MAZE_HEIGHT; r++)
   {
-    for (int c = 0; c < MAZE_WIDTH; c++)
+    for (byte c = 0; c < MAZE_WIDTH; c++)
     {
-      Point *p;
-      if (grid[r][c] != NULL)
-      {
-        p = new Point(c, r);
-        grid[r][c] = p;
-        graph.insertVertex(p);
-      }
+      if (r > 14 || c > 14)
+        break;
 
-      if (c > 0) // connect to left neighbor
-        graph.insertEdge(p, grid[r][c - 1], rand());
-      if (r > 0) // connect to top neighbor
-        graph.insertEdge(p, grid[r - 1][c], rand());
+      maze[r][c].x = c;
+      maze[r][c].y = r;
+      graph.insertVertex(&maze[r][c]);
+
+      // if (c > 0) // connect to left neighbor
+      //   graph.insertEdge(p, maze[r][c - 1], rand());
+      // if (r > 0) // connect to top neighbor
+      //   graph.insertEdge(p, maze[r - 1][c], rand());
+    }
+  }
+}
+
+uint16_t grid[MATRIX_WIDTH][MATRIX_HEIGHT]; // color of each pixel in matrix
+
+/**
+ * @brief Display the maze on the matrix
+ * 
+ */
+void displayMaze() {
+  Serial.println(graph.vertices.size());
+  for (byte r = 0; r < MATRIX_HEIGHT; r++)
+  {
+    for (byte c = 0; c < MATRIX_WIDTH; c++)
+    {
+      grid[r][c] = matrix.Color333(0, 0, 0);
+    }
+  }
+  byte x, y;
+  for (auto it = graph.vertices.begin(); it != graph.vertices.end(); it++)
+  {
+    x = it->first.x;
+    y = it->first.y;
+    byte r = 2*y + 1;
+    byte c = 2*x + 1;
+    grid[r][c] = matrix.Color333(7, 7, 7); // color the vertex node
+    Serial.println(String(r) + "," + String(c));
+
+    // color the edge nodes
+    byte x1, y1, x2, y2;
+    for (byte i = 0; i < it->second->n_edges; i++)
+    {
+      x1 = it->second->edgesLeaving[i]->source->pos->x;
+      y1 = it->second->edgesLeaving[i]->source->pos->y;
+      x2 = it->second->edgesLeaving[i]->target->pos->x;
+      y2 = it->second->edgesLeaving[i]->target->pos->y;
+      r = y1 + y2 + 1;
+      c = x1 + x2 + 1;
+      grid[r][c] = matrix.Color333(7, 7, 7);
+    }
+  }
+  for (byte r = 0; r < MATRIX_HEIGHT; r++)
+  {
+    for (byte c = 0; c < MATRIX_WIDTH; c++)
+    {
+      matrix.drawPixel(c, r, grid[r][c]);
     }
   }
 }
