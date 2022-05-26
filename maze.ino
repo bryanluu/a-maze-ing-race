@@ -58,7 +58,7 @@ void loop() {
   matrix.swapBuffers(false);
 }
 
-// ########## POSITION CODE ##########
+// ########## GRAPH CODE ##########
 
 // encodes the position given x and y
 #define ENCODE(x, y) ((x) + (MAZE_WIDTH)*(y))
@@ -66,112 +66,67 @@ void loop() {
 #define GET_X(p) ((p) % (MAZE_WIDTH))
 // decodes the y value of position
 #define GET_Y(p) ((p) / (MAZE_WIDTH))
+// max number of neighbors this node can have
+#define MAX_NEIGHBORS 4
 
-struct point {
-public:
+struct node;
+struct edge;
+
+struct node {
   byte pos; // the position in the maze
+  edge * edgesLeaving[MAX_NEIGHBORS] = {}; // edges leaving this vertex
+  int cheapestEdgeCost = INT_MAX;
+  edge * cheapestEdge = NULL;
+  unsigned char n_edges = 0;
 
-  bool operator==(const point &other) const
+  bool operator==(const node &other) const
   {
     return (pos == other.pos);
+  }
+  
+};
+
+struct edge {
+  node * source;
+  node * target;
+  int weight;
+
+  edge (node * src, node * tgt, int wt)
+  {
+    source = src;
+    target = tgt;
+    weight = wt;
   }
 };
 
 namespace std {
   template<>
-  struct hash<point>
+  struct hash<node>
   {
-    std::size_t operator()(const point& p) const
+    std::size_t operator()(const node& p) const
     {
       return p.pos;
     }
   };
 }
 
-// ########## GRAPH CODE ##########
-
-#define MAX_NEIGHBORS 4
-
-class Graph {
-private:
-  class Vertex;
-  class Edge;
-
-  typedef std::shared_ptr<Vertex> vertex_ptr;
-  
-  class Vertex {
-  public:
-    point * pos; // vertex position
-    Edge * edgesLeaving[MAX_NEIGHBORS] = {}; // edges leaving this vertex
-    int cheapestEdgeCost = INT_MAX;
-    Edge * cheapestEdge = NULL;
-    unsigned char n_edges = 0;
-  
-    Vertex(point * pos)
-    {
-      this->pos = pos;
-    }
-
-    ~Vertex() {
-      delete pos;
-      for (int i=0; i<4; i++)
-        delete(edgesLeaving[i]);
-      delete(cheapestEdge);
-    }
-  };
-  
-  class Edge {
-  public:
-    vertex_ptr source;
-    vertex_ptr target;
-    int weight;
-  
-    Edge(vertex_ptr source, vertex_ptr target, int weight)
-    {
-      this->source = source;
-      this->target = target;
-      this->weight = weight;
-    }
-  };
-
-public:
-  typedef std::unordered_map<point, vertex_ptr> vertex_list;
-  
+struct graph {
   // hold graph vertices
-  vertex_list vertices = vertex_list();
-
-  /**
-   * Insert a new vertex into the graph.
-   * 
-   * @param pos the position stored in the new vertex
-   * @return true if the position can be inserted as a new vertex, false if it is already in the graph
-   */
-  bool insertVertex(point * pos)
-  {
-    vertex_list::const_iterator got = vertices.find(*pos);
-    if (got != vertices.end()) // vertex already exists
-      return false;
-
-    vertices[*pos] = vertex_ptr(new Vertex(pos));
-    return true;
-  }
+  node vertices[MAZE_WIDTH * MAZE_HEIGHT];
 
   /**
    * Insert a new directed edge with a positive edge weight into the graph.
    * 
-   * @param source the position of the source vertex for the edge
-   * @param target the position of the target vertex for the edge
+   * @param s the encoded position of the source vertex for the edge
+   * @param t the encoded position of the target vertex for the edge
    * @param weight the weight for the edge (has to be a positive integer)
    * @return true if the edge could be inserted or its weight updated, false if the edge with the
    *         same weight was already in the graph
    */
-  bool insertEdge(point *source, point *target, int weight)
+  bool insertEdge(byte s, byte t, int weight)
   {
-    vertex_list::const_iterator sv = vertices.find(*source);
-    vertex_list::const_iterator tv = vertices.find(*target);
-
     // source or target vertices invalid
-    if (sv == vertices.end() || tv == vertices.end())
+    if (s >= (MAZE_CAPACITY) || t >= (MAZE_CAPACITY))
       return false;
 
     // invalid negative weight
@@ -180,12 +135,14 @@ public:
 
     // handle cases where edge already exists between these points
     bool alreadyExists = false;
-    Edge * e;
-    for (int i = 0; i < MAX_NEIGHBORS; i++)
+    node * source = &vertices[s];
+    node * target = &vertices[t];
+    edge * e;
+    for (byte i = 0; i < MAX_NEIGHBORS; i++)
     {
-      e = sv->second->edgesLeaving[i];
+      e = source->edgesLeaving[i];
       // if an edge to target is found from source
-      if (e->target == tv->second)
+      if (e->target == target)
       {
         if (e->weight == weight)
           return false; // edge already exists
@@ -194,9 +151,9 @@ public:
         alreadyExists = true;
         break;
       }
-      e = tv->second->edgesLeaving[i];
+      e = target->edgesLeaving[i];
       // if an edge to target is found from source
-      if (e->target == sv->second)
+      if (e->target == source)
       {
         if (e->weight == weight)
           return false; // edge already exists
@@ -209,15 +166,14 @@ public:
     if (!alreadyExists)
     {
       // otherwise add new edge to source vertex
-      sv->second->edgesLeaving[sv->second->n_edges++] = new Edge(sv->second, tv->second, weight);
-      tv->second->edgesLeaving[tv->second->n_edges++] = new Edge(tv->second, sv->second, weight);
+      source->edgesLeaving[source->n_edges++] = new edge(source, target, weight);
+      target->edgesLeaving[target->n_edges++] = new edge(target, source, weight);
     }
     return true;
   }
 };
 
-Graph graph; // graph of the maze
-point maze[MAZE_HEIGHT][MAZE_WIDTH]; // points on the maze
+graph maze_g; // graph of the maze
 
 /**
  * @brief Builds the maze graph
@@ -229,16 +185,8 @@ void buildMaze() {
   {
     for (byte c = 0; c < MAZE_WIDTH; c++)
     {
-      if (r > 14 || c > 14)
-        break;
-
-      maze[r][c].pos = ENCODE(c, r);
-      graph.insertVertex(&maze[r][c]);
-
-      // if (c > 0) // connect to left neighbor
-      //   graph.insertEdge(p, maze[r][c - 1], rand());
-      // if (r > 0) // connect to top neighbor
-      //   graph.insertEdge(p, maze[r - 1][c], rand());
+      byte p = ENCODE(c, r);
+      maze_g.vertices[p].pos = p; // set the pos of the node
     }
   }
 }
@@ -250,7 +198,6 @@ uint16_t grid[MATRIX_WIDTH][MATRIX_HEIGHT]; // color of each pixel in matrix
  * 
  */
 void displayMaze() {
-  Serial.println(graph.vertices.size());
   for (byte r = 0; r < MATRIX_HEIGHT; r++)
   {
     for (byte c = 0; c < MATRIX_WIDTH; c++)
@@ -259,23 +206,23 @@ void displayMaze() {
     }
   }
   byte x, y;
-  for (auto it = graph.vertices.begin(); it != graph.vertices.end(); it++)
+  for (byte p = 0; p < MAZE_CAPACITY; p++)
   {
-    x = GET_X(it->first.pos);
-    y = GET_Y(it->first.pos);
+    x = GET_X(p);
+    y = GET_Y(p);
     byte r = 2*y + 1;
     byte c = 2*x + 1;
     grid[r][c] = matrix.Color333(7, 7, 7); // color the vertex node
-    Serial.println(String(r) + "," + String(c));
 
     // color the edge nodes
     byte x1, y1, x2, y2;
-    for (byte i = 0; i < it->second->n_edges; i++)
+    node * v = &maze_g.vertices[p];
+    for (byte i = 0; i < v->n_edges; i++)
     {
-      x1 = GET_X(it->second->edgesLeaving[i]->source->pos->pos);
-      y1 = GET_Y(it->second->edgesLeaving[i]->source->pos->pos);
-      x2 = GET_X(it->second->edgesLeaving[i]->target->pos->pos);
-      y2 = GET_Y(it->second->edgesLeaving[i]->target->pos->pos);
+      x1 = GET_X(v->edgesLeaving[i]->source->pos);
+      y1 = GET_Y(v->edgesLeaving[i]->source->pos);
+      x2 = GET_X(v->edgesLeaving[i]->target->pos);
+      y2 = GET_Y(v->edgesLeaving[i]->target->pos);
       r = y1 + y2 + 1;
       c = x1 + x2 + 1;
       grid[r][c] = matrix.Color333(7, 7, 7);
