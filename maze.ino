@@ -189,7 +189,7 @@ namespace std {
 
 struct graph {
   // hold graph vertices
-  node vertices[MAZE_WIDTH * MAZE_HEIGHT];
+  node vertices[MAZE_CAPACITY];
 
   /**
    * Insert a new directed edge with a positive edge weight into the graph.
