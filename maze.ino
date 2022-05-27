@@ -162,10 +162,19 @@ struct node {
       default:
         return NONE;
     }
-    return ENCODE(GET_X(pos) + dx, GET_Y(pos) + dy);
+    byte x, y;
+    x = GET_X(pos) + dx;
+    y = GET_Y(pos) + dy;
+    // if new position is invalid
+    if (x < 0 || x >= MAZE_WIDTH || y < 0 || y >= MAZE_HEIGHT)
+      return NONE;
+
+    return ENCODE(x, y);
   }
   
 };
+
+bool compare(node * u, node * v);
 
 namespace std {
   template<>
