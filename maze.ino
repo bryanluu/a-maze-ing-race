@@ -45,7 +45,7 @@ RGBmatrixPanel matrix(A, B, C, D, CLK, LAT, OE, true);
 #define RED (matrix.Color333(7, 0, 0))
 #define GREEN (matrix.Color333(0, 7, 0))
 #define BLUE (matrix.Color333(0, 0, 7))
-#define WALL_COLOR RED
+#define WALL_COLOR (matrix.Color333(1, 0, 0))
 #define MAZE_COLOR BLACK
 #define START_COLOR BLUE
 #define FINISH_COLOR GREEN
