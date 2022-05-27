@@ -97,6 +97,8 @@ struct node {
   int edges[MAX_NEIGHBORS]; // neighboring edges of this node
   int cheapestEdgeCost = INT_MAX;
   byte cheapestEdge = NONE;
+  int distance = INT_MAX; // distance to start
+  byte pred = NONE; // predecessor for Dijkstra
   bool used = false; // whether the node has been used in the maze
 
   node ()
@@ -178,6 +180,9 @@ struct node {
 };
 
 bool compareCheapestEdge(node * u, node * v);
+bool compareDistance(node * u, node * v);
+
+typedef std::vector<node *> vertex_list;
 
 namespace std {
   template<>
@@ -260,6 +265,19 @@ bool compareCheapestEdge(node * u, node * v)
   return u->cheapestEdgeCost > v->cheapestEdgeCost;
 }
 
+/**
+ * @brief Comparator used by priority queue to compare two nodes by their distance to start
+ * 
+ * @param u node 1
+ * @param v node 2
+ * @return true if node 1's distance is greater than node 2's
+ * @return false otherwise
+ */
+bool compareDistance(node * u, node * v)
+{
+  return u->distance > v->distance;
+}
+
 node * start;
 node * finish;
 /**
@@ -316,6 +334,54 @@ void buildMaze() {
         w->cheapestEdgeCost = v->edges[i];
         w->cheapestEdge = ((*v) - (*w));
         pq.push(w);
+      }
+    }
+  }
+}
+
+/**
+ * @brief Calculates the shortest path from start to finish using Dijkstra's algorithm
+ * 
+ */
+void calculateSolution()
+{
+  // set start distance to 0
+  start->distance = 0;
+
+  // initialize queue of vertices
+  std::priority_queue<node*, vertex_list, decltype(&compareDistance)> pq(&compareDistance);
+  for (int p = 0; p < MAZE_CAPACITY; p++)
+  {
+    node * v = &maze_g.vertices[p];
+    pq.push(v);
+  }
+
+  while (!pq.empty())
+  {
+    node * u = pq.top(); // u is best vertex
+    pq.pop();
+    if (u->used)
+      continue;
+
+    u->used = true; // mark u as visited
+    if (u == finish)
+      break; // we've reached the end of the maze!
+
+    // loop through neighbors
+    for (byte i =  0; i < MAX_NEIGHBORS; i++)
+    {
+      int e = u->edges[i]; // edge cost
+      if (e == NONE) // if edge doesn't exist
+        continue;
+
+      byte n = u->pos_relative(i); // get neighbor index
+      node * v = &adj_g.vertices[n]; // neighbor node
+      int alt = u->distance + u->edges[i];
+      if (alt < v->distance)
+      {
+        v->distance = alt;
+        v->pred = u->pos;
+        pq.push(v);
       }
     }
   }
