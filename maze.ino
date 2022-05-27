@@ -177,7 +177,7 @@ struct node {
   
 };
 
-bool compare(node * u, node * v);
+bool compareCheapestEdge(node * u, node * v);
 
 namespace std {
   template<>
@@ -250,8 +250,12 @@ void buildAdjacencyGraph() {
 /**
  * @brief Comparator used by priority queue to compare two nodes by their cheapest edge cost
  * 
+ * @param u node 1
+ * @param v node 2
+ * @return true if node 1's cheapest Edge is greater than node 2's
+ * @return false otherwise
  */
-bool compare(node * u, node * v)
+bool compareCheapestEdge(node * u, node * v)
 {
   return u->cheapestEdgeCost > v->cheapestEdgeCost;
 }
@@ -278,7 +282,7 @@ void buildMaze() {
   buildAdjacencyGraph();
 
   // initialize the queue of vertices not in the maze
-  std::priority_queue<node *, std::vector<node *>, decltype(&compare)> pq(&compare);
+  std::priority_queue<node *, vertex_list, decltype(&compareCheapestEdge)> pq(&compareCheapestEdge);
   for (byte p = 0; p < MAZE_CAPACITY; p++)
     pq.push(&adj_g.vertices[p]);
 
