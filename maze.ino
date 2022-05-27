@@ -51,6 +51,9 @@ RGBmatrixPanel matrix(A, B, C, D, CLK, LAT, OE, true);
 #define FINISH_COLOR GREEN
 
 void buildMaze();
+void calculateSolution();
+void colorMaze();
+void colorEndpoints();
 void displayMaze();
 
 void setup() {
@@ -63,6 +66,8 @@ void loop() {
   // Clear background
   matrix.fillScreen(0);
 
+  colorMaze();
+  colorEndpoints();
   displayMaze();
   delay(100);
 
@@ -398,6 +403,37 @@ void displayMaze() {
   {
     for (byte c = 0; c < MATRIX_WIDTH; c++)
     {
+      matrix.drawPixel(c, r, grid[r][c]);
+    }
+  }
+}
+
+/**
+ * @brief Colors the endpoints of the maze
+ * 
+ */
+void colorEndpoints()
+{
+  // Color special nodes
+  byte x, y;
+  x = GET_X(start->pos);
+  y = GET_Y(start->pos);
+  grid[2*y + 1][2*x + 1] = START_COLOR;
+  x = GET_X(finish->pos);
+  y = GET_Y(finish->pos);
+  grid[2*y + 1][2*x + 1] = FINISH_COLOR;
+}
+
+/**
+ * @brief Color the maze and walls
+ * 
+ */
+void colorMaze()
+{
+  for (byte r = 0; r < MATRIX_HEIGHT; r++)
+  {
+    for (byte c = 0; c < MATRIX_WIDTH; c++)
+    {
       grid[r][c] = WALL_COLOR;
     }
   }
@@ -424,22 +460,6 @@ void displayMaze() {
       r = y + y2 + 1;
       c = x + x2 + 1;
       grid[r][c] = MAZE_COLOR;
-    }
-  }
-
-  // Color special nodes
-  x = GET_X(start->pos);
-  y = GET_Y(start->pos);
-  grid[2*y + 1][2*x + 1] = START_COLOR;
-  x = GET_X(finish->pos);
-  y = GET_Y(finish->pos);
-  grid[2*y + 1][2*x + 1] = FINISH_COLOR;
-
-  for (byte r = 0; r < MATRIX_HEIGHT; r++)
-  {
-    for (byte c = 0; c < MATRIX_WIDTH; c++)
-    {
-      matrix.drawPixel(c, r, grid[r][c]);
     }
   }
 }
