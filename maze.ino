@@ -47,6 +47,8 @@ RGBmatrixPanel matrix(A, B, C, D, CLK, LAT, OE, true);
 #define BLUE (matrix.Color333(0, 0, 7))
 #define WALL_COLOR RED
 #define MAZE_COLOR BLACK
+#define START_COLOR BLUE
+#define FINISH_COLOR GREEN
 
 void buildMaze();
 void displayMaze();
@@ -254,6 +256,19 @@ bool compare(node * u, node * v)
   return u->cheapestEdgeCost > v->cheapestEdgeCost;
 }
 
+node * start;
+node * finish;
+/**
+ * @brief Set the end points of the maze object
+ * 
+ */
+void setMazeEndpoints()
+{
+  // set endpoints
+  start = &maze_g.vertices[0];
+  finish = &maze_g.vertices[MAZE_CAPACITY - 1];
+}
+
 /**
  * @brief Builds the maze graph using Prim's algorithm
  * 
@@ -266,6 +281,8 @@ void buildMaze() {
   std::priority_queue<node *, std::vector<node *>, decltype(&compare)> pq(&compare);
   for (byte p = 0; p < MAZE_CAPACITY; p++)
     pq.push(&adj_g.vertices[p]);
+
+  setMazeEndpoints();
 
   while (!pq.empty()) // until the maze has all vertices
   {
@@ -339,6 +356,15 @@ void displayMaze() {
       grid[r][c] = MAZE_COLOR;
     }
   }
+
+  // Color special nodes
+  x = GET_X(start->pos);
+  y = GET_Y(start->pos);
+  grid[2*y + 1][2*x + 1] = START_COLOR;
+  x = GET_X(finish->pos);
+  y = GET_Y(finish->pos);
+  grid[2*y + 1][2*x + 1] = FINISH_COLOR;
+
   for (byte r = 0; r < MATRIX_HEIGHT; r++)
   {
     for (byte c = 0; c < MATRIX_WIDTH; c++)
