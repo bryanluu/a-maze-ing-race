@@ -7,7 +7,6 @@
 
 #include <RGBmatrixPanel.h>
 #include <limits.h>
-#include <unordered_map>
 #include <memory>
 
 // Most of the signal pins are configurable, but the CLK pin has some
