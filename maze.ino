@@ -8,6 +8,8 @@
 #include <RGBmatrixPanel.h>
 #include <limits.h>
 #include <memory>
+#include <vector>
+#include <queue>
 
 // Most of the signal pins are configurable, but the CLK pin has some
 // special constraints.  On 8-bit AVR boards it must be on PORTB...
@@ -88,13 +90,12 @@ void loop() {
 #define RIGHT 0
 #define NONE (-1)
 
-struct node;
-
 struct node {
   byte pos; // the position in the maze
   int edges[MAX_NEIGHBORS]; // neighboring edges of this node
   int cheapestEdgeCost = INT_MAX;
-  unsigned char n_edges = 0;
+  byte cheapestEdge = NONE;
+  bool used = false; // whether the node has been used in the maze
 
   node ()
   {
@@ -218,28 +219,83 @@ struct graph {
   }
 };
 
+graph adj_g; // adjacency graph of maze
 graph maze_g; // graph of the maze
 
 /**
- * @brief Builds the maze graph
+ * @brief Builds the adjacency graph for the maze
  * 
  */
-void buildMaze() {
-  // build the maze!
+void buildAdjacencyGraph() {
   for (byte r = 0; r < MAZE_HEIGHT; r++)
   {
     for (byte c = 0; c < MAZE_WIDTH; c++)
     {
       byte p = ENCODE(c, r);
-      node * v = &maze_g.vertices[p];
+      node * v = &adj_g.vertices[p];
       v->pos = p; // set the pos of the node
 
       // connect to top node
       if (r > 0)
-        maze_g.insertEdge(p, ENCODE(c, r-1), rand());
+        adj_g.insertEdge(p, ENCODE(c, r-1), rand());
       // connect to left node
       if (c > 0)
-        maze_g.insertEdge(p, ENCODE(c-1, r), rand());
+        adj_g.insertEdge(p, ENCODE(c-1, r), rand());
+    }
+  }
+}
+
+/**
+ * @brief Comparator used by priority queue to compare two nodes by their cheapest edge cost
+ * 
+ */
+bool compare(node * u, node * v)
+{
+  return u->cheapestEdgeCost > v->cheapestEdgeCost;
+}
+
+/**
+ * @brief Builds the maze graph using Prim's algorithm
+ * 
+ */
+void buildMaze() {
+  // build the adjacency graph for the edge information
+  buildAdjacencyGraph();
+
+  // initialize the queue of vertices not in the maze
+  std::priority_queue<node *, std::vector<node *>, decltype(&compare)> pq(&compare);
+  for (byte p = 0; p < MAZE_CAPACITY; p++)
+    pq.push(&adj_g.vertices[p]);
+
+  while (!pq.empty()) // until the maze has all vertices
+  {
+    node * v = pq.top(); // take the vertex with the cheapest edge
+    pq.pop();
+    if (v->used) // if this vertex is already in the maze, skip it
+      continue;
+
+    v->used = true; // mark v as a used vertex in the maze
+    node * u = &maze_g.vertices[v->pos]; // set v to maze vertex
+    u->pos = v->pos; // add the vertex to the maze
+    if (v->cheapestEdge != NONE) // if v touches the maze, add cheapest neighboring edge to maze
+      maze_g.insertEdge(v->pos, v->pos_relative(v->cheapestEdge), v->cheapestEdgeCost);
+    
+    // loop through outgoing edges of vertex
+    for (byte i = 0; i < MAX_NEIGHBORS; i++)
+    {
+      int e = v->edges[i]; // edge cost
+      if (e == NONE) // if edge doesn't exist
+        continue;
+
+      byte n = v->pos_relative(i); // get neighbor index
+      node * w = &adj_g.vertices[n]; // neighbor node
+      if (!w->used && e < w->cheapestEdgeCost) // if a new neighboring cheapest edge is found
+      {
+        // update neighbor's cheapest edge
+        w->cheapestEdgeCost = v->edges[i];
+        w->cheapestEdge = ((*v) - (*w));
+        pq.push(w);
+      }
     }
   }
 }
