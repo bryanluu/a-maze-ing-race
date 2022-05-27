@@ -43,6 +43,8 @@ RGBmatrixPanel matrix(A, B, C, D, CLK, LAT, OE, true);
 #define RED (matrix.Color333(7, 0, 0))
 #define GREEN (matrix.Color333(0, 7, 0))
 #define BLUE (matrix.Color333(0, 0, 7))
+#define WALL_COLOR RED
+#define MAZE_COLOR BLACK
 
 void buildMaze();
 void displayMaze();
@@ -244,7 +246,7 @@ void displayMaze() {
   {
     for (byte c = 0; c < MATRIX_WIDTH; c++)
     {
-      grid[r][c] = RED;
+      grid[r][c] = WALL_COLOR;
     }
   }
   byte x, y;
@@ -254,7 +256,7 @@ void displayMaze() {
     y = GET_Y(p);
     byte r = 2*y + 1;
     byte c = 2*x + 1;
-    grid[r][c] = BLACK; // color the vertex node
+    grid[r][c] = MAZE_COLOR; // color the vertex node
 
     // color the edge nodes
     byte x2, y2;
@@ -269,7 +271,7 @@ void displayMaze() {
       y2 = GET_Y(u->pos);
       r = y + y2 + 1;
       c = x + x2 + 1;
-      grid[r][c] = BLACK;
+      grid[r][c] = MAZE_COLOR;
     }
   }
   for (byte r = 0; r < MATRIX_HEIGHT; r++)
