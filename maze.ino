@@ -100,10 +100,8 @@ void loop() {
 struct node {
   byte pos; // the position in the maze
   int edges[MAX_NEIGHBORS]; // neighboring edges of this node
-  int cheapestEdgeCost = INT_MAX;
-  byte cheapestEdge = NONE;
-  int distance = INT_MAX; // distance to start
-  byte pred = NONE; // predecessor for Dijkstra
+  int value = INT_MAX; // integer value to keep track of (cheapestEdgeWeight or distance)
+  byte id = NONE; // id of edge or node to keep track of
   bool used = false; // whether the node has been used in the maze
 
   node ()
@@ -184,8 +182,7 @@ struct node {
   
 };
 
-bool compareCheapestEdge(node * u, node * v);
-bool compareDistance(node * u, node * v);
+bool compare(node * u, node * v);
 
 typedef std::vector<node *> vertex_list;
 
@@ -258,29 +255,16 @@ void buildAdjacencyGraph() {
 }
 
 /**
- * @brief Comparator used by priority queue to compare two nodes by their cheapest edge cost
+ * @brief Comparator used by priority queue to compare two nodes by their value
  * 
  * @param u node 1
  * @param v node 2
- * @return true if node 1's cheapest Edge is greater than node 2's
+ * @return true if node 1's value is greater than node 2's
  * @return false otherwise
  */
-bool compareCheapestEdge(node * u, node * v)
+bool compare(node * u, node * v)
 {
-  return u->cheapestEdgeCost > v->cheapestEdgeCost;
-}
-
-/**
- * @brief Comparator used by priority queue to compare two nodes by their distance to start
- * 
- * @param u node 1
- * @param v node 2
- * @return true if node 1's distance is greater than node 2's
- * @return false otherwise
- */
-bool compareDistance(node * u, node * v)
-{
-  return u->distance > v->distance;
+  return u->value > v->value;
 }
 
 node * start;
@@ -305,7 +289,7 @@ void buildMaze() {
   buildAdjacencyGraph();
 
   // initialize the queue of vertices not in the maze
-  std::priority_queue<node *, vertex_list, decltype(&compareCheapestEdge)> pq(&compareCheapestEdge);
+  std::priority_queue<node *, vertex_list, decltype(&compare)> pq(&compare);
   for (byte p = 0; p < MAZE_CAPACITY; p++)
     pq.push(&adj_g.vertices[p]);
 
@@ -321,8 +305,8 @@ void buildMaze() {
     v->used = true; // mark v as a used vertex in the maze
     node * u = &maze_g.vertices[v->pos]; // set v to maze vertex
     u->pos = v->pos; // add the vertex to the maze
-    if (v->cheapestEdge != NONE) // if v touches the maze, add cheapest neighboring edge to maze
-      maze_g.insertEdge(v->pos, v->pos_relative(v->cheapestEdge), v->cheapestEdgeCost);
+    if (v->id != NONE) // if v touches the maze, add cheapest neighboring edge to maze
+      maze_g.insertEdge(v->pos, v->pos_relative(v->id), v->value);
     
     // loop through outgoing edges of vertex
     for (byte i = 0; i < MAX_NEIGHBORS; i++)
@@ -333,11 +317,11 @@ void buildMaze() {
 
       byte n = v->pos_relative(i); // get neighbor index
       node * w = &adj_g.vertices[n]; // neighbor node
-      if (!w->used && e < w->cheapestEdgeCost) // if a new neighboring cheapest edge is found
+      if (!w->used && e < w->value) // if a new neighboring cheapest edge is found
       {
         // update neighbor's cheapest edge
-        w->cheapestEdgeCost = v->edges[i];
-        w->cheapestEdge = ((*v) - (*w));
+        w->value = v->edges[i];
+        w->id = ((*v) - (*w));
         pq.push(w);
       }
     }
@@ -351,10 +335,10 @@ void buildMaze() {
 void calculateSolution()
 {
   // set start distance to 0
-  start->distance = 0;
+  start->value = 0;
 
   // initialize queue of vertices
-  std::priority_queue<node*, vertex_list, decltype(&compareDistance)> pq(&compareDistance);
+  std::priority_queue<node*, vertex_list, decltype(&compare)> pq(&compare);
   for (int p = 0; p < MAZE_CAPACITY; p++)
   {
     node * v = &maze_g.vertices[p];
@@ -380,12 +364,14 @@ void calculateSolution()
         continue;
 
       byte n = u->pos_relative(i); // get neighbor index
-      node * v = &adj_g.vertices[n]; // neighbor node
-      int alt = u->distance + u->edges[i];
-      if (alt < v->distance)
+      node * v = &maze_g.vertices[n]; // neighbor node
+      x = GET_X(v->pos);
+      y = GET_Y(v->pos);
+      int alt = u->value + e;
+      if (!v->used && alt < v->value)
       {
-        v->distance = alt;
-        v->pred = u->pos;
+        v->value = alt;
+        v->id = u->pos;
         pq.push(v);
       }
     }
@@ -451,7 +437,7 @@ void colorMaze()
     node * v = &maze_g.vertices[p];
     for (byte i = 0; i < MAX_NEIGHBORS; i++)
     {
-      if (v->edges[i] == NONE)
+      if (v->edges[i] == NONE) // if edge doesn't exist
         continue;
 
       node * u = &maze_g.vertices[v->pos_relative(i)];
