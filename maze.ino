@@ -40,12 +40,13 @@ RGBmatrixPanel matrix(A, B, C, D, CLK, LAT, OE, true);
 #define MAZE_CAPACITY ((MAZE_WIDTH) * (MAZE_HEIGHT))
 
 // colors
+#define B_UNIT 1 // brightness out of 7
 #define BLACK (matrix.Color333(0, 0, 0))
-#define WHITE (matrix.Color333(7, 7, 7))
-#define RED (matrix.Color333(7, 0, 0))
-#define GREEN (matrix.Color333(0, 7, 0))
-#define BLUE (matrix.Color333(0, 0, 7))
-#define WALL_COLOR (matrix.Color333(1, 0, 0))
+#define WHITE (matrix.Color333(B_UNIT, B_UNIT, B_UNIT))
+#define RED (matrix.Color333(B_UNIT, 0, 0))
+#define GREEN (matrix.Color333(0, B_UNIT, 0))
+#define BLUE (matrix.Color333(0, 0, B_UNIT))
+#define WALL_COLOR RED
 #define MAZE_COLOR BLACK
 #define START_COLOR BLUE
 #define FINISH_COLOR GREEN
