@@ -46,21 +46,25 @@ RGBmatrixPanel matrix(A, B, C, D, CLK, LAT, OE, true);
 #define RED (matrix.Color333(B_UNIT, 0, 0))
 #define GREEN (matrix.Color333(0, B_UNIT, 0))
 #define BLUE (matrix.Color333(0, 0, B_UNIT))
+#define YELLOW (matrix.Color333(B_UNIT, B_UNIT, 0))
 #define WALL_COLOR RED
 #define MAZE_COLOR BLACK
 #define START_COLOR BLUE
 #define FINISH_COLOR GREEN
+#define SOLUTION_COLOR YELLOW
 
 void buildMaze();
 void calculateSolution();
 void colorMaze();
 void colorEndpoints();
+void colorSolution();
 void displayMaze();
 
 void setup() {
   randomSeed(analogRead(0));
   matrix.begin();
   buildMaze();
+  calculateSolution();
 }
 
 void loop() {
@@ -68,6 +72,8 @@ void loop() {
   matrix.fillScreen(0);
 
   colorMaze();
+  if (millis() > 5000)
+    colorSolution();
   colorEndpoints();
   displayMaze();
   delay(100);
@@ -442,5 +448,40 @@ void colorMaze()
       c = x + x2 + 1;
       grid[r][c] = MAZE_COLOR;
     }
+  }
+}
+
+/**
+ * @brief Color the shortest path from start to finish
+ * 
+ */
+void colorSolution()
+{
+  node * v = finish;
+  byte x, y;
+  byte lx, ly; // last node pos
+  byte r, c;
+  while (true) // loop until we reach the start
+  {
+    // Update last node position
+    lx = x;
+    ly = y;
+    // Update current node position
+    x = GET_X(v->pos);
+    y = GET_Y(v->pos);
+    // Color current node position
+    r = 2*y + 1;
+    c = 2*x + 1;
+    grid[r][c] = SOLUTION_COLOR;
+    if (v != finish)
+    { // Color the in-between step from last node position
+      r = y + ly + 1;
+      c = x + lx + 1;
+      grid[r][c] = SOLUTION_COLOR;
+    }
+    if (v == start) // if we've reached the start
+      break; // stop loop
+    
+    v = &maze_g.vertices[v->id]; // move to predecessor
   }
 }
