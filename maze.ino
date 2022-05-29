@@ -339,23 +339,16 @@ void calculateSolution()
 {
   // set start distance to 0
   start->value = 0;
+  start->used = true; // mark the start as visited
 
   // initialize queue of vertices
   std::priority_queue<node*, vertex_list, decltype(&compare)> pq(&compare);
-  for (int p = 0; p < MAZE_CAPACITY; p++)
-  {
-    node * v = &maze_g.vertices[p];
-    pq.push(v);
-  }
+  pq.push(start);
 
-  while (!pq.empty())
+  while (!pq.empty()) // until the queue is empty
   {
     node * u = pq.top(); // u is best vertex
     pq.pop();
-    if (u->used)
-      continue;
-
-    u->used = true; // mark u as visited
     if (u == finish)
       break; // we've reached the end of the maze!
 
@@ -368,13 +361,12 @@ void calculateSolution()
 
       byte n = u->pos_relative(i); // get neighbor index
       node * v = &maze_g.vertices[n]; // neighbor node
-      x = GET_X(v->pos);
-      y = GET_Y(v->pos);
       int alt = u->value + e;
       if (!v->used && alt < v->value)
       {
         v->value = alt;
         v->id = u->pos;
+        v->used = true; // mark v as visited
         pq.push(v);
       }
     }
