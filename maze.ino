@@ -99,7 +99,7 @@ void loop() {
 #define NONE (-1)
 
 struct node {
-  byte pos; // the position in the maze
+  byte pos = NONE; // the position in the maze
   int edges[MAX_NEIGHBORS]; // neighboring edges of this node
   int value = INT_MAX; // integer value to keep track of (cheapestEdgeWeight or distance)
   byte id = NONE; // id of edge or node to keep track of
