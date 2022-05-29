@@ -91,6 +91,8 @@ void loop() {
 #define GET_Y(p) ((p) / (MAZE_WIDTH))
 // max number of neighbors this node can have
 #define MAX_NEIGHBORS 4
+// number of edges
+#define N_EDGES (MAZE_CAPACITY - 1)
 // directional indices
 #define TOP 3
 #define LEFT 2
@@ -247,10 +249,10 @@ void buildAdjacencyGraph() {
 
       // connect to top node
       if (r > 0)
-        adj_g.insertEdge(p, ENCODE(c, r-1), rand());
+        adj_g.insertEdge(p, ENCODE(c, r-1), random(N_EDGES));
       // connect to left node
       if (c > 0)
-        adj_g.insertEdge(p, ENCODE(c-1, r), rand());
+        adj_g.insertEdge(p, ENCODE(c-1, r), random(N_EDGES));
     }
   }
 }
