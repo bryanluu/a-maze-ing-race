@@ -343,19 +343,19 @@ void buildMaze() {
  */
 void calculateSolution()
 {
-  // set start distance to 0
-  start->value = 0;
-  start->used = true; // mark the start as visited
+  // set finish distance to 0
+  finish->value = 0;
+  finish->used = true; // mark the finish as visited
 
   // initialize queue of vertices
   std::priority_queue<node*, vertex_list, decltype(&compare)> pq(&compare);
-  pq.push(start);
+  pq.push(finish);
 
   while (!pq.empty()) // until the queue is empty
   {
     node * u = pq.top(); // u is best vertex
     pq.pop();
-    if (u == finish)
+    if (u == start)
       break; // we've reached the end of the maze!
 
     // loop through neighbors
@@ -457,11 +457,11 @@ void colorMaze()
  */
 void colorSolution()
 {
-  node * v = finish;
+  node * v = start;
   byte x, y;
   byte lx, ly; // last node pos
   byte r, c;
-  while (true) // loop until we reach the start
+  while (true) // loop until we reach the finish
   {
     // Update last node position
     lx = x;
@@ -473,13 +473,13 @@ void colorSolution()
     r = 2*y + 1;
     c = 2*x + 1;
     grid[r][c] = SOLUTION_COLOR;
-    if (v != finish)
+    if (v != start)
     { // Color the in-between step from last node position
       r = y + ly + 1;
       c = x + lx + 1;
       grid[r][c] = SOLUTION_COLOR;
     }
-    if (v == start) // if we've reached the start
+    if (v == finish) // if we've reached the finish
       break; // stop loop
     
     v = &maze_g.vertices[v->id]; // move to predecessor
