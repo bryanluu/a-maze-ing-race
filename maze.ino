@@ -293,6 +293,7 @@ bool compare(node * u, node * v)
 
 node * start;
 node * finish;
+byte playerX, playerY;
 /**
  * @brief Set the end points of the maze object
  * 
@@ -302,6 +303,8 @@ void setMazeEndpoints()
   // set endpoints
   start = &maze_g.vertices[0];
   finish = &maze_g.vertices[MAZE_CAPACITY - 1];
+  playerX = GET_X(start->pos);
+  playerY = GET_Y(start->pos);
 }
 
 /**
@@ -535,5 +538,25 @@ Direction readInput()
  */
 void movePlayer(Direction dir)
 {
-  // move player code here
+  short dx, dy;
+  dx = 0;
+  dy = 0;
+  switch (dir)
+  {
+  case Up:
+    dy = -1;
+    break;
+  case Down:
+    dy = 1;
+    break;
+  case Left:
+    dx = -1;
+    break;
+  case Right:
+    dx = 1;
+    break;
+  }
+  playerX = constrain(playerX + dx, 0, MAZE_WIDTH);
+  playerY = constrain(playerY + dy, 0, MAZE_HEIGHT);
+  Serial.println(String(playerX) + "," + String(playerY));
 }
