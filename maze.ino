@@ -317,8 +317,6 @@ void buildMaze() {
   for (byte p = 0; p < MAZE_CAPACITY; p++)
     pq.push(&adj_g.vertices[p]);
 
-  setMazeEndpoints();
-
   while (!pq.empty()) // until the maze has all vertices
   {
     node * v = pq.top(); // take the vertex with the cheapest edge
@@ -350,6 +348,8 @@ void buildMaze() {
       }
     }
   }
+
+  setMazeEndpoints();
 }
 
 /**
