@@ -553,6 +553,7 @@ void movePlayer(Direction dir)
   short dx, dy;
   dx = 0;
   dy = 0;
+  byte x, y;
   switch (dir)
   {
   case Up:
@@ -567,8 +568,15 @@ void movePlayer(Direction dir)
   case Right:
     dx = 1;
     break;
+  default:
+    return;
   }
-  playerX = constrain(playerX + dx, 0, MAZE_WIDTH);
-  playerY = constrain(playerY + dy, 0, MAZE_HEIGHT);
-  Serial.println(String(playerX) + "," + String(playerY));
+  x = constrain(playerX + dx, 0, MATRIX_WIDTH);
+  y = constrain(playerY + dy, 0, MATRIX_HEIGHT);
+  if (grid[y][x] != WALL_COLOR)
+  {
+    playerX = x;
+    playerY = y;
+    Serial.println(String(playerX) + "," + String(playerY));
+  }
 }
