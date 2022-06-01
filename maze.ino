@@ -62,27 +62,37 @@ enum Direction : int
   None = -1
 };
 
+// player parameters
+#define UP_CHAR 'U'
+#define LEFT_CHAR 'L'
+#define DOWN_CHAR 'D'
+#define RIGHT_CHAR 'R'
+
 void buildMaze();
 void calculateSolution();
+Direction readInput();
+void movePlayer(Direction dir);
 void colorMaze();
 void colorEndpoints();
 void colorSolution();
 void displayMaze();
 
 void setup() {
+  Serial.begin(9600);
   randomSeed(analogRead(0));
   matrix.begin();
   buildMaze();
   calculateSolution();
 }
 
+Direction inputDir = None;
 void loop() {
   // Clear background
   matrix.fillScreen(0);
 
+  inputDir = readInput();
+  movePlayer(inputDir);
   colorMaze();
-  if (millis() > 5000)
-    colorSolution();
   colorEndpoints();
   displayMaze();
   delay(100);
@@ -487,4 +497,41 @@ void colorSolution()
     
     v = &maze_g.vertices[v->id]; // move to predecessor
   }
+}
+
+/**
+ * @brief Reads the input to direct where to move the player
+ * 
+ * @return Direction - the input direction to move
+ */
+Direction readInput()
+{
+  char c;
+  while (Serial.available())
+  {
+    c = Serial.read();
+    switch (c)
+    {
+    case UP_CHAR:
+      return Up;
+    case LEFT_CHAR:
+      return Left;
+    case DOWN_CHAR:
+      return Down;
+    case RIGHT_CHAR:
+      return Right;
+      break;
+    }
+  }
+  return None;
+}
+
+/**
+ * @brief Move the position of the player in the given direction
+ * 
+ * @param dir 
+ */
+void movePlayer(Direction dir)
+{
+  // move player code here
 }
