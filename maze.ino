@@ -54,6 +54,7 @@ RGBmatrixPanel matrix(A, B, C, D, CLK, LAT, OE, true);
 #define START_COLOR BLUE
 #define FINISH_COLOR GREEN
 #define SOLUTION_COLOR YELLOW
+#define PLAYER_COLOR WHITE
 
 enum Direction : int
 {
@@ -77,6 +78,7 @@ void movePlayer(Direction dir);
 void colorMaze();
 void colorEndpoints();
 void colorSolution();
+void colorPlayer();
 void displayMaze();
 
 void setup() {
@@ -96,6 +98,7 @@ void loop() {
   movePlayer(inputDir);
   colorMaze();
   colorEndpoints();
+  colorPlayer();
   displayMaze();
   delay(100);
 
@@ -502,6 +505,15 @@ void colorSolution()
     
     v = &maze_g.vertices[v->id]; // move to predecessor
   }
+}
+
+/**
+ * @brief Color the player position
+ * 
+ */
+void colorPlayer()
+{
+  grid[playerY][playerX] = PLAYER_COLOR;
 }
 
 /**
