@@ -53,6 +53,15 @@ RGBmatrixPanel matrix(A, B, C, D, CLK, LAT, OE, true);
 #define FINISH_COLOR GREEN
 #define SOLUTION_COLOR YELLOW
 
+enum Direction : int
+{
+  Up,
+  Left,
+  Down,
+  Right,
+  None = -1
+};
+
 void buildMaze();
 void calculateSolution();
 void colorMaze();
@@ -99,24 +108,18 @@ void loop() {
 #define MAX_NEIGHBORS 4
 // number of edges
 #define N_EDGES (MAZE_CAPACITY - 1)
-// directional indices
-#define TOP 3
-#define LEFT 2
-#define BOTTOM 1
-#define RIGHT 0
-#define NONE (-1)
 
 struct node {
-  byte pos = NONE; // the position in the maze
+  byte pos = None; // the position in the maze
   int edges[MAX_NEIGHBORS]; // neighboring edges of this node
   int value = INT_MAX; // integer value to keep track of (cheapestEdgeWeight or distance)
-  byte id = NONE; // id of edge or node to keep track of
+  byte id = None; // id of edge or node to keep track of
   bool used = false; // whether the node has been used in the maze
 
   node ()
   {
     for (byte i = 0; i < MAX_NEIGHBORS; i++)
-      edges[i] = NONE;
+      edges[i] = None;
   }
 
   bool operator==(const node &other) const
@@ -128,27 +131,27 @@ struct node {
    * @brief Find relative position from other
    * 
    * @param other 
-   * @return byte - a direction index
+   * @return Direction - a direction index
    */
-  byte operator-(const node &other) const
+  Direction operator-(const node &other) const
   {
     short dx = GET_X(pos) - GET_X(other.pos);
     short dy = GET_Y(pos) - GET_Y(other.pos);
     if (dx == 0)
     {
       if (dy == 1)
-        return BOTTOM;
+        return Down;
       else if (dy == -1)
-        return TOP;
+        return Up;
     }
     else if (dy == 0)
     {
       if (dx == 1)
-        return RIGHT;
+        return Right;
       else if (dx == -1)
-        return LEFT;
+        return Left;
     }
-    return NONE;
+    return None;
   }
 
   /**
@@ -164,27 +167,27 @@ struct node {
     dy = 0;
     switch (dir)
     {
-      case TOP:
+      case Up:
         dy = -1;
         break;
-      case BOTTOM:
+      case Down:
         dy = 1;
         break;
-      case LEFT:
+      case Left:
         dx = -1;
         break;
-      case RIGHT:
+      case Right:
         dx = 1;
         break;
       default:
-        return NONE;
+        return None;
     }
     byte x, y;
     x = GET_X(pos) + dx;
     y = GET_Y(pos) + dy;
     // if new position is invalid
     if (x < 0 || x >= MAZE_WIDTH || y < 0 || y >= MAZE_HEIGHT)
-      return NONE;
+      return None;
 
     return ENCODE(x, y);
   }
@@ -314,14 +317,14 @@ void buildMaze() {
     v->used = true; // mark v as a used vertex in the maze
     node * u = &maze_g.vertices[v->pos]; // set v to maze vertex
     u->pos = v->pos; // add the vertex to the maze
-    if (v->id != NONE) // if v touches the maze, add cheapest neighboring edge to maze
+    if (v->id != None) // if v touches the maze, add cheapest neighboring edge to maze
       maze_g.insertEdge(v->pos, v->pos_relative(v->id), v->value);
     
     // loop through outgoing edges of vertex
     for (byte i = 0; i < MAX_NEIGHBORS; i++)
     {
       int e = v->edges[i]; // edge cost
-      if (e == NONE) // if edge doesn't exist
+      if (e == None) // if edge doesn't exist
         continue;
 
       byte n = v->pos_relative(i); // get neighbor index
@@ -362,7 +365,7 @@ void calculateSolution()
     for (byte i =  0; i < MAX_NEIGHBORS; i++)
     {
       int e = u->edges[i]; // edge cost
-      if (e == NONE) // if edge doesn't exist
+      if (e == None) // if edge doesn't exist
         continue;
 
       byte n = u->pos_relative(i); // get neighbor index
@@ -438,7 +441,7 @@ void colorMaze()
     node * v = &maze_g.vertices[p];
     for (byte i = 0; i < MAX_NEIGHBORS; i++)
     {
-      if (v->edges[i] == NONE) // if edge doesn't exist
+      if (v->edges[i] == None) // if edge doesn't exist
         continue;
 
       node * u = &maze_g.vertices[v->pos_relative(i)];
