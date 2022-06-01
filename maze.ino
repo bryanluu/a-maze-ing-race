@@ -38,6 +38,8 @@ RGBmatrixPanel matrix(A, B, C, D, CLK, LAT, OE, true);
 #define MAZE_WIDTH ((MATRIX_WIDTH) - 1)/2
 #define MAZE_HEIGHT ((MATRIX_HEIGHT) - 1)/2
 #define MAZE_CAPACITY ((MAZE_WIDTH) * (MAZE_HEIGHT))
+#define MATRIX(p) (2*(p) + 1) // conversion from maze coordinates to matrix coordinates
+#define MATRIX_INTERPOLATE(p, q) ((p) + (q) + 1) // interpolate between maze coordinates in matrix space
 
 // colors
 #define B_UNIT 1 // brightness out of 7
@@ -418,10 +420,10 @@ void colorEndpoints()
   byte x, y;
   x = GET_X(start->pos);
   y = GET_Y(start->pos);
-  grid[2*y + 1][2*x + 1] = START_COLOR;
+  grid[MATRIX(y)][MATRIX(x)] = START_COLOR;
   x = GET_X(finish->pos);
   y = GET_Y(finish->pos);
-  grid[2*y + 1][2*x + 1] = FINISH_COLOR;
+  grid[MATRIX(y)][MATRIX(x)] = FINISH_COLOR;
 }
 
 /**
@@ -442,8 +444,8 @@ void colorMaze()
   {
     x = GET_X(p);
     y = GET_Y(p);
-    byte r = 2*y + 1;
-    byte c = 2*x + 1;
+    byte r = MATRIX(y);
+    byte c = MATRIX(x);
     grid[r][c] = MAZE_COLOR; // color the vertex node
 
     // color the edge nodes
@@ -457,8 +459,8 @@ void colorMaze()
       node * u = &maze_g.vertices[v->pos_relative(i)];
       x2 = GET_X(u->pos);
       y2 = GET_Y(u->pos);
-      r = y + y2 + 1;
-      c = x + x2 + 1;
+      r = MATRIX_INTERPOLATE(y, y2);
+      c = MATRIX_INTERPOLATE(x, x2);
       grid[r][c] = MAZE_COLOR;
     }
   }
@@ -483,13 +485,13 @@ void colorSolution()
     x = GET_X(v->pos);
     y = GET_Y(v->pos);
     // Color current node position
-    r = 2*y + 1;
-    c = 2*x + 1;
+    r = MATRIX(y);
+    c = MATRIX(x);
     grid[r][c] = SOLUTION_COLOR;
     if (v != start)
     { // Color the in-between step from last node position
-      r = y + ly + 1;
-      c = x + lx + 1;
+      r = MATRIX_INTERPOLATE(y, ly);
+      c = MATRIX_INTERPOLATE(x, lx);
       grid[r][c] = SOLUTION_COLOR;
     }
     if (v == finish) // if we've reached the finish
