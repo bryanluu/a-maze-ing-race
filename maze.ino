@@ -306,8 +306,8 @@ void setMazeEndpoints()
   // set endpoints
   start = &maze_g.vertices[0];
   finish = &maze_g.vertices[MAZE_CAPACITY - 1];
-  playerX = GET_X(start->pos);
-  playerY = GET_Y(start->pos);
+  playerX = MATRIX(GET_X(start->pos));
+  playerY = MATRIX(GET_Y(start->pos));
 }
 
 /**
