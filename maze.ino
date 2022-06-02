@@ -31,6 +31,12 @@
 
 RGBmatrixPanel matrix(A, B, C, D, CLK, LAT, OE, true);
 
+// Similar to F(), but for PROGMEM string pointers rather than literals
+#define F2(progmem_ptr) (const __FlashStringHelper *)progmem_ptr
+const char congrats[] PROGMEM = "You won, congratulations!!!"; // Congratulations text
+#define CONGRATS_PAUSE_TIME 1000 // in ms
+#define CONGRATS_SCROLL_DELAY 1 // in ms
+
 // ########## MAIN CODE ##########
 
 #define MATRIX_WIDTH 31
@@ -80,11 +86,15 @@ void colorEndpoints();
 void colorSolution();
 void colorPlayer();
 void displayMaze();
+bool playerHasFinished();
+void displayFinishScreen();
 
 void setup() {
   Serial.begin(9600);
   randomSeed(analogRead(0));
   matrix.begin();
+  matrix.setTextWrap(false);
+  matrix.setTextSize(1);
   buildMaze();
   calculateSolution();
 }
@@ -94,13 +104,19 @@ void loop() {
   // Clear background
   matrix.fillScreen(0);
 
-  inputDir = readInput();
-  movePlayer(inputDir);
-  colorMaze();
-  colorEndpoints();
-  colorPlayer();
-  displayMaze();
-  delay(100);
+  if (!playerHasFinished())
+  {
+    inputDir = readInput();
+    movePlayer(inputDir);
+    colorMaze();
+    colorEndpoints();
+    colorPlayer();
+    displayMaze();
+  }
+  else
+  {
+    displayFinishScreen();
+  }
 
 #if !defined(__AVR__)
   // On non-AVR boards, delay slightly so screen updates aren't too quick.
@@ -579,4 +595,39 @@ void movePlayer(Direction dir)
     playerY = y;
     Serial.println(String(playerX) + "," + String(playerY));
   }
+}
+
+/**
+ * @brief Checks if player has reached the end of the maze
+ * 
+ * @return true if player's position overlaps with the finish
+ * @return false otherwise
+ */
+bool playerHasFinished()
+{
+  return playerX == MATRIX(GET_X(finish->pos)) && playerY == MATRIX(GET_Y(finish->pos));
+}
+
+int16_t textX = matrix.width();
+int16_t textMin = (int16_t)sizeof(congrats) * -6;
+int16_t hue = 0;
+/**
+ * @brief Displays the finishing graphics
+ * 
+ */
+void displayFinishScreen()
+{
+  matrix.setTextColor(matrix.ColorHSV(hue, 255, 255, true));
+  matrix.setCursor(textX, matrix.height()/2 - 4);
+  matrix.print(congrats);
+  textX--; // move text left
+  if (textX < textMin)
+  {
+    delay(CONGRATS_PAUSE_TIME);
+    textX = matrix.width();
+  }
+  hue += 7;
+  if (hue >= 1536)
+    hue = 0;
+  delay(CONGRATS_SCROLL_DELAY);
 }
