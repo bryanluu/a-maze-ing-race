@@ -48,19 +48,20 @@ const char congrats[] PROGMEM = "You won, congratulations!!!"; // Congratulation
 #define MATRIX_INTERPOLATE(p, q) ((p) + (q) + 1) // interpolate between maze coordinates in matrix space
 
 // colors
-#define B_UNIT 1 // brightness out of 7
+#define HUE(deg) ((long) (1536 * ((deg)/360.0))) // conversion to hue value from angle
+#define DEFAULT_BRIGHTNESS 150
 #define BLACK (matrix.Color333(0, 0, 0))
-#define WHITE (matrix.Color333(B_UNIT, B_UNIT, B_UNIT))
-#define RED (matrix.Color333(B_UNIT, 0, 0))
-#define GREEN (matrix.Color333(0, B_UNIT, 0))
-#define BLUE (matrix.Color333(0, 0, B_UNIT))
-#define YELLOW (matrix.Color333(B_UNIT, B_UNIT, 0))
-#define WALL_COLOR RED
+#define WHITE(b) (matrix.ColorHSV(0, 0, b, true)) // white at a given brightness
+#define RED(b) (matrix.ColorHSV(0, 255, b, true)) // red at a given brightness
+#define GREEN(b) (matrix.ColorHSV(HUE(120), 255, b, true)) // green at a given brightness
+#define BLUE(b) (matrix.ColorHSV(HUE(240), 255, b, true)) // blue at a given brightness
+#define YELLOW(b) (matrix.ColorHSV(HUE(60), 255, b, true)) // yellow at a given brightness
+#define WALL_COLOR RED(DEFAULT_BRIGHTNESS)
 #define MAZE_COLOR BLACK
-#define START_COLOR BLUE
-#define FINISH_COLOR GREEN
-#define SOLUTION_COLOR YELLOW
-#define PLAYER_COLOR WHITE
+#define START_COLOR BLUE(DEFAULT_BRIGHTNESS)
+#define FINISH_COLOR GREEN(DEFAULT_BRIGHTNESS)
+#define SOLUTION_COLOR YELLOW(DEFAULT_BRIGHTNESS)
+#define PLAYER_COLOR WHITE(DEFAULT_BRIGHTNESS)
 
 enum Direction : int
 {
