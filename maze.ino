@@ -439,12 +439,10 @@ void displayMaze()
   {
     for (byte c = 0; c < MATRIX_WIDTH; c++)
     {
-      if (!seen[r][c])
-        color = BLACK; // shroud maze sections that haven't been seen
+      if (seen[r][c])
+        color = grid[r][c]; // show seen pixels
       else
-      {
-        color = grid[r][c]; // otherwise show their colors
-      }
+        color = BLACK; // shroud maze sections that haven't been seen
       matrix.drawPixel(c, r, color);
     }
   }
@@ -489,7 +487,7 @@ void colorMaze()
   {
     for (byte c = 0; c < MATRIX_WIDTH; c++)
     {
-      grid[r][c] = SEEN_WALL_COLOR;
+      grid[r][c] = SEEN_WALL_COLOR; // color wall
     }
   }
   byte x, y;
