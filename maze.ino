@@ -425,7 +425,7 @@ void calculateSolution()
   }
 }
 
-uint16_t grid[MATRIX_WIDTH][MATRIX_HEIGHT]; // color of each pixel in matrix
+uint16_t grid[MATRIX_HEIGHT][MATRIX_WIDTH]; // color of each pixel in matrix
 bool seen[MATRIX_HEIGHT][MATRIX_WIDTH]; // which pixels the player has seen
 
 /**
