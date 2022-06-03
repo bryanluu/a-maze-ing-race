@@ -46,6 +46,7 @@ const char congrats[] PROGMEM = "You won, congratulations!!!"; // Congratulation
 #define MAZE_CAPACITY ((MAZE_WIDTH) * (MAZE_HEIGHT))
 #define MATRIX(p) (2*(p) + 1) // conversion from maze coordinates to matrix coordinates
 #define MATRIX_INTERPOLATE(p, q) ((p) + (q) + 1) // interpolate between maze coordinates in matrix space
+#define VISIBILITY 1 // in pixels (1 means player can see up to 1 pixel away)
 
 // colors
 #define HUE(deg) ((long) (1536 * ((deg)/360.0))) // conversion to hue value from angle
@@ -458,7 +459,7 @@ void displayMaze()
  */
 bool isNearPlayer(byte x, byte y)
 {
-  return (abs(x - playerX) <= 1) && (abs(y - playerY) <= 1);
+  return (abs(x - playerX) <= VISIBILITY) && (abs(y - playerY) <= VISIBILITY);
 }
 
 /**
@@ -558,9 +559,9 @@ void colorSolution()
  */
 void brightenSurroundings()
 {
-  for (byte x = playerX - 1; x <= playerX + 1; x++)
+  for (short x = playerX - VISIBILITY; x <= playerX + VISIBILITY; x++)
   {
-    for (byte y = playerY - 1; y <= playerY + 1; y++)
+    for (short y = playerY - VISIBILITY; y <= playerY + VISIBILITY; y++)
     {
       if (!isNearPlayer(x, y))
         continue;
