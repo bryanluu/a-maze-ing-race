@@ -49,19 +49,27 @@ const char congrats[] PROGMEM = "You won, congratulations!!!"; // Congratulation
 
 // colors
 #define HUE(deg) ((long) (1536 * ((deg)/360.0))) // conversion to hue value from angle
-#define DEFAULT_BRIGHTNESS 150
+#define SEEN_BRIGHTNESS 100
+#define NEAR_BRIGHTNESS 255
 #define BLACK (matrix.Color333(0, 0, 0))
 #define WHITE(b) (matrix.ColorHSV(0, 0, b, true)) // white at a given brightness
-#define RED(b) (matrix.ColorHSV(0, 255, b, true)) // red at a given brightness
-#define GREEN(b) (matrix.ColorHSV(HUE(120), 255, b, true)) // green at a given brightness
-#define BLUE(b) (matrix.ColorHSV(HUE(240), 255, b, true)) // blue at a given brightness
-#define YELLOW(b) (matrix.ColorHSV(HUE(60), 255, b, true)) // yellow at a given brightness
-#define WALL_COLOR RED(DEFAULT_BRIGHTNESS)
-#define MAZE_COLOR BLACK
-#define START_COLOR BLUE(DEFAULT_BRIGHTNESS)
-#define FINISH_COLOR GREEN(DEFAULT_BRIGHTNESS)
-#define SOLUTION_COLOR YELLOW(DEFAULT_BRIGHTNESS)
-#define PLAYER_COLOR WHITE(DEFAULT_BRIGHTNESS)
+#define COLOR 255
+#define SHADE 0
+#define H_RED (HUE(0)) // red hue value
+#define H_GREEN (HUE(120)) // green hue value
+#define H_BLUE (HUE(240)) // blue hue value
+#define H_YELLOW (HUE(60)) // yellow hue value
+#define SEEN_WALL_COLOR (matrix.ColorHSV(H_RED, 255, SEEN_BRIGHTNESS, true))
+#define NEAR_WALL_COLOR (matrix.ColorHSV(H_RED, 255, NEAR_BRIGHTNESS, true))
+#define SEEN_MAZE_COLOR BLACK
+#define NEAR_MAZE_COLOR BLACK
+#define SEEN_START_COLOR (matrix.ColorHSV(H_BLUE, 255, SEEN_BRIGHTNESS, true))
+#define NEAR_START_COLOR (matrix.ColorHSV(H_BLUE, 255, NEAR_BRIGHTNESS, true))
+#define SEEN_FINISH_COLOR (matrix.ColorHSV(H_GREEN, 255, SEEN_BRIGHTNESS, true))
+#define NEAR_FINISH_COLOR (matrix.ColorHSV(H_GREEN, 255, NEAR_BRIGHTNESS, true))
+#define SEEN_SOLUTION_COLOR (matrix.ColorHSV(H_YELLOW, 255, SEEN_BRIGHTNESS, true))
+#define NEAR_SOLUTION_COLOR (matrix.ColorHSV(H_YELLOW, 255, NEAR_BRIGHTNESS, true))
+#define PLAYER_COLOR (WHITE(NEAR_BRIGHTNESS))
 
 enum Direction : int
 {
@@ -418,19 +426,41 @@ void calculateSolution()
 }
 
 uint16_t grid[MATRIX_WIDTH][MATRIX_HEIGHT]; // color of each pixel in matrix
+bool seen[MATRIX_HEIGHT][MATRIX_WIDTH]; // which pixels the player has seen
 
 /**
  * @brief Display the maze on the matrix
  * 
  */
-void displayMaze() {
+void displayMaze()
+{
+  uint16_t color;
   for (byte r = 0; r < MATRIX_HEIGHT; r++)
   {
     for (byte c = 0; c < MATRIX_WIDTH; c++)
     {
-      matrix.drawPixel(c, r, grid[r][c]);
+      if (!seen[r][c])
+        color = BLACK; // shroud maze sections that haven't been seen
+      else
+      {
+        color = grid[r][c]; // otherwise show their colors
+      }
+      matrix.drawPixel(c, r, color);
     }
   }
+}
+
+/**
+ * @brief Check whether given pixel is near player
+ * 
+ * @param x horizontal coord
+ * @param y vertical coord
+ * @return true if close to player
+ * @return false otherwise
+ */
+bool isNearPlayer(byte x, byte y)
+{
+  return (abs(x - playerX) <= 1) && (abs(y - playerY) <= 1);
 }
 
 /**
@@ -443,10 +473,10 @@ void colorEndpoints()
   byte x, y;
   x = GET_X(start->pos);
   y = GET_Y(start->pos);
-  grid[MATRIX(y)][MATRIX(x)] = START_COLOR;
+  grid[MATRIX(y)][MATRIX(x)] = SEEN_START_COLOR;
   x = GET_X(finish->pos);
   y = GET_Y(finish->pos);
-  grid[MATRIX(y)][MATRIX(x)] = FINISH_COLOR;
+  grid[MATRIX(y)][MATRIX(x)] = SEEN_FINISH_COLOR;
 }
 
 /**
@@ -459,7 +489,7 @@ void colorMaze()
   {
     for (byte c = 0; c < MATRIX_WIDTH; c++)
     {
-      grid[r][c] = WALL_COLOR;
+      grid[r][c] = SEEN_WALL_COLOR;
     }
   }
   byte x, y;
@@ -469,7 +499,7 @@ void colorMaze()
     y = GET_Y(p);
     byte r = MATRIX(y);
     byte c = MATRIX(x);
-    grid[r][c] = MAZE_COLOR; // color the vertex node
+    grid[r][c] = SEEN_MAZE_COLOR; // color the vertex node
 
     // color the edge nodes
     byte x2, y2;
@@ -484,7 +514,7 @@ void colorMaze()
       y2 = GET_Y(u->pos);
       r = MATRIX_INTERPOLATE(y, y2);
       c = MATRIX_INTERPOLATE(x, x2);
-      grid[r][c] = MAZE_COLOR;
+      grid[r][c] = SEEN_MAZE_COLOR;
     }
   }
 }
@@ -510,17 +540,45 @@ void colorSolution()
     // Color current node position
     r = MATRIX(y);
     c = MATRIX(x);
-    grid[r][c] = SOLUTION_COLOR;
+    grid[r][c] = SEEN_SOLUTION_COLOR;
     if (v != start)
     { // Color the in-between step from last node position
       r = MATRIX_INTERPOLATE(y, ly);
       c = MATRIX_INTERPOLATE(x, lx);
-      grid[r][c] = SOLUTION_COLOR;
+      grid[r][c] = SEEN_SOLUTION_COLOR;
     }
     if (v == finish) // if we've reached the finish
       break; // stop loop
     
     v = &maze_g.vertices[v->id]; // move to predecessor
+  }
+}
+
+/**
+ * @brief Brighten pixels around player
+ * 
+ */
+void brightenSurroundings()
+{
+  for (byte x = playerX - 1; x <= playerX + 1; x++)
+  {
+    for (byte y = playerY - 1; y <= playerY + 1; y++)
+    {
+      if (!isNearPlayer(x, y))
+        continue;
+
+      uint16_t color = grid[y][x];
+      if (color == SEEN_WALL_COLOR)
+        color = NEAR_WALL_COLOR;
+      else if (color == SEEN_START_COLOR)
+        color = NEAR_START_COLOR;
+      else if (color == NEAR_FINISH_COLOR)
+        color = SEEN_FINISH_COLOR;
+      else if (color == NEAR_SOLUTION_COLOR)
+        color = SEEN_SOLUTION_COLOR;
+      grid[y][x] = color; // update color
+      seen[y][x] = true; // mark pixel as seen
+    }
   }
 }
 
@@ -531,6 +589,7 @@ void colorSolution()
 void colorPlayer()
 {
   grid[playerY][playerX] = PLAYER_COLOR;
+  brightenSurroundings();
 }
 
 /**
@@ -590,10 +649,11 @@ void movePlayer(Direction dir)
   }
   x = constrain(playerX + dx, 0, MATRIX_WIDTH);
   y = constrain(playerY + dy, 0, MATRIX_HEIGHT);
-  if (grid[y][x] != WALL_COLOR)
+  if (grid[y][x] != NEAR_WALL_COLOR)
   {
     playerX = x;
     playerY = y;
+
     Serial.println(String(playerX) + "," + String(playerY));
   }
 }
