@@ -439,7 +439,7 @@ void displayMaze()
   {
     for (byte c = 0; c < MATRIX_WIDTH; c++)
     {
-      if (seen[r][c])
+      if (seen[r][c] || grid[r][c] == SEEN_FINISH_COLOR)
         color = grid[r][c]; // show seen pixels
       else
         color = BLACK; // shroud maze sections that haven't been seen
