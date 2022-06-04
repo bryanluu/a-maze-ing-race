@@ -90,8 +90,8 @@ enum Direction : int
 
 void buildMaze();
 void calculateSolution();
-Direction readInput();
-void movePlayer(Direction dir);
+void readInput();
+void movePlayer();
 void colorMaze();
 void colorEndpoints();
 void colorSolution();
@@ -110,15 +110,15 @@ void setup() {
   calculateSolution();
 }
 
-Direction inputDir = None;
+Direction inputDir = None; // variable to hold direction input state
 void loop() {
   // Clear background
   matrix.fillScreen(0);
 
   if (!playerHasFinished())
   {
-    inputDir = readInput();
-    movePlayer(inputDir);
+    readInput();
+    movePlayer();
     colorMaze();
     colorEndpoints();
     colorPlayer();
@@ -593,44 +593,44 @@ void colorPlayer()
 }
 
 /**
- * @brief Reads the input to direct where to move the player
- * 
- * @return Direction - the input direction to move
+ * @brief Reads the input
  */
-Direction readInput()
+void readInput()
 {
   char c;
+  inputDir = None;
   while (Serial.available())
   {
     c = Serial.read();
     switch (c)
     {
     case UP_CHAR:
-      return Up;
+      inputDir = Up;
+      return;
     case LEFT_CHAR:
-      return Left;
+      inputDir = Left;
+      return;
     case DOWN_CHAR:
-      return Down;
+      inputDir = Down;
+      return;
     case RIGHT_CHAR:
-      return Right;
-      break;
+      inputDir = Right;
+      return;
     }
   }
-  return None;
 }
 
 /**
  * @brief Move the position of the player in the given direction
  * 
- * @param dir 
  */
-void movePlayer(Direction dir)
+void movePlayer()
 {
   short dx, dy;
   dx = 0;
   dy = 0;
   byte x, y;
-  switch (dir)
+  switch (inputDir)
   {
   case Up:
     dy = -1;
