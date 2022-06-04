@@ -91,6 +91,7 @@ enum Direction : int
 // solution parameters
 #define HINT_CHAR 'H'
 #define HINT_DURATION 3000 // in ms
+#define HINTS 3 // number of hints player has
 
 void buildMaze();
 void calculateSolution();
@@ -119,6 +120,7 @@ Direction inputDir = None; // variable to hold direction input state
 bool buttonPressed = false; // variable to hold button state
 unsigned long currentTime = 0;
 unsigned long lastHintTime = -HINT_DURATION;
+byte hints = HINTS;
 void loop() {
   // Clear background
   matrix.fillScreen(0);
@@ -718,5 +720,6 @@ void displayFinishScreen()
  */
 void useHint()
 {
-  lastHintTime = currentTime;
+  if (--hints <= HINTS)
+    lastHintTime = currentTime;
 }
