@@ -571,10 +571,10 @@ void brightenSurroundings()
         color = NEAR_WALL_COLOR;
       else if (color == SEEN_START_COLOR)
         color = NEAR_START_COLOR;
-      else if (color == NEAR_FINISH_COLOR)
-        color = SEEN_FINISH_COLOR;
-      else if (color == NEAR_SOLUTION_COLOR)
-        color = SEEN_SOLUTION_COLOR;
+      else if (color == SEEN_FINISH_COLOR)
+        color = NEAR_FINISH_COLOR;
+      else if (color == SEEN_SOLUTION_COLOR)
+        color = NEAR_SOLUTION_COLOR;
       grid[y][x] = color; // update color
       seen[y][x] = true; // mark pixel as seen
     }
