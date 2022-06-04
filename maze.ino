@@ -47,6 +47,7 @@ const char congrats[] PROGMEM = "You won, congratulations!!!"; // Congratulation
 #define MATRIX(p) (2*(p) + 1) // conversion from maze coordinates to matrix coordinates
 #define MATRIX_INTERPOLATE(p, q) ((p) + (q) + 1) // interpolate between maze coordinates in matrix space
 #define VISIBILITY 1 // in pixels (1 means player can see up to 1 pixel away)
+#define SHROUD true // control whether the unseen portions of the maze are shrouded
 
 // colors
 #define HUE(deg) ((long) (1536 * ((deg)/360.0))) // conversion to hue value from angle
@@ -440,7 +441,7 @@ void displayMaze()
   {
     for (byte c = 0; c < MATRIX_WIDTH; c++)
     {
-      if (seen[r][c] || grid[r][c] == SEEN_FINISH_COLOR)
+      if (!SHROUD || seen[r][c] || grid[r][c] == SEEN_FINISH_COLOR)
         color = grid[r][c]; // show seen pixels
       else
         color = BLACK; // shroud maze sections that haven't been seen
