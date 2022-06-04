@@ -88,10 +88,15 @@ enum Direction : int
 #define LEFT_CHAR 'L'
 #define UP_CHAR 'U'
 
+// solution parameters
+#define HINT_CHAR 'H'
+#define HINT_DURATION 3000 // in ms
+
 void buildMaze();
 void calculateSolution();
 void readInput();
 void movePlayer();
+void useHint();
 void colorMaze();
 void colorEndpoints();
 void colorSolution();
@@ -111,15 +116,25 @@ void setup() {
 }
 
 Direction inputDir = None; // variable to hold direction input state
+bool buttonPressed = false; // variable to hold button state
+unsigned long currentTime = 0;
+unsigned long lastHintTime = -HINT_DURATION;
 void loop() {
   // Clear background
   matrix.fillScreen(0);
 
   if (!playerHasFinished())
   {
+    currentTime = millis();
+
     readInput();
     movePlayer();
+    if (buttonPressed)
+      useHint();
+
     colorMaze();
+    if (currentTime - lastHintTime < HINT_DURATION)
+      colorSolution();
     colorEndpoints();
     colorPlayer();
     displayMaze();
@@ -599,6 +614,7 @@ void readInput()
 {
   char c;
   inputDir = None;
+  buttonPressed = false;
   while (Serial.available())
   {
     c = Serial.read();
@@ -615,6 +631,9 @@ void readInput()
       return;
     case RIGHT_CHAR:
       inputDir = Right;
+      return;
+    case HINT_CHAR:
+      buttonPressed = true;
       return;
     }
   }
@@ -691,4 +710,13 @@ void displayFinishScreen()
   if (hue >= 1536)
     hue = 0;
   delay(CONGRATS_SCROLL_DELAY);
+}
+
+/**
+ * @brief Use a hint to show the solution for a short period of time
+ * 
+ */
+void useHint()
+{
+  lastHintTime = currentTime;
 }
