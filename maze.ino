@@ -74,18 +74,18 @@ const char congrats[] PROGMEM = "You won, congratulations!!!"; // Congratulation
 
 enum Direction : int
 {
-  Up,
-  Left,
-  Down,
+  None = -1,
   Right,
-  None = -1
+  Down,
+  Left,
+  Up
 };
 
 // player parameters
-#define UP_CHAR 'U'
-#define LEFT_CHAR 'L'
-#define DOWN_CHAR 'D'
 #define RIGHT_CHAR 'R'
+#define DOWN_CHAR 'D'
+#define LEFT_CHAR 'L'
+#define UP_CHAR 'U'
 
 void buildMaze();
 void calculateSolution();
