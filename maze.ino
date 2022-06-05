@@ -41,8 +41,9 @@ const char congrats[] PROGMEM = "You won, congratulations!!!"; // Congratulation
 
 #define MATRIX_WIDTH 31
 #define MATRIX_HEIGHT 31
-#define MAZE_WIDTH ((MATRIX_WIDTH) - 1)/2
-#define MAZE_HEIGHT ((MATRIX_HEIGHT) - 1)/2
+#define MAZE(p) (((p) - 1)/2) // conversion from matrix coordinates to maze coordinates
+#define MAZE_WIDTH MAZE(MATRIX_WIDTH)
+#define MAZE_HEIGHT MAZE(MATRIX_HEIGHT)
 #define MAZE_CAPACITY ((MAZE_WIDTH) * (MAZE_HEIGHT))
 #define MATRIX(p) (2*(p) + 1) // conversion from maze coordinates to matrix coordinates
 #define MATRIX_INTERPOLATE(p, q) ((p) + (q) + 1) // interpolate between maze coordinates in matrix space
@@ -114,7 +115,6 @@ void setup() {
   matrix.setTextWrap(false);
   matrix.setTextSize(1);
   buildMaze();
-  calculateSolution();
 }
 
 Direction inputDir = None; // variable to hold direction input state
@@ -133,7 +133,10 @@ void loop() {
     readInput();
     movePlayer();
     if (buttonPressed)
+    {
+      calculateSolution();
       useHint();
+    }
 
     colorMaze();
     colorStart();
@@ -405,14 +408,40 @@ void buildMaze() {
 }
 
 /**
- * @brief Calculates the shortest path from start to finish using Dijkstra's algorithm
+ * @brief Obtain the location of the player on the maze, closest to the finish
+ * 
+ * @return byte
+ */
+byte approximatePlayerLocation()
+{
+  byte x = MAZE(playerX);
+  byte y = MAZE(playerY);
+  byte pos = ENCODE(x, y);
+  return pos;
+}
+
+node * current; // approximate node of player in maze space
+/**
+ * @brief Calculates the shortest path from player position to finish using Dijkstra's algorithm
  * 
  */
 void calculateSolution()
 {
+  // initialize vertices
+  for (byte p = 0; p < MAZE_CAPACITY; p++)
+  {
+    node * v = &maze_g.vertices[p];
+    v->value = INT_MAX;
+    v->id = None;
+    v->used = false;
+  }
+
   // set finish distance to 0
   finish->value = 0;
   finish->used = true; // mark the finish as visited
+
+  byte playerPos = approximatePlayerLocation();
+  current = &maze_g.vertices[playerPos];
 
   // initialize queue of vertices
   std::priority_queue<node*, vertex_list, decltype(&compare)> pq(&compare);
@@ -422,7 +451,7 @@ void calculateSolution()
   {
     node * u = pq.top(); // u is best vertex
     pq.pop();
-    if (u == start)
+    if (u == current)
       break; // we've reached the end of the maze!
 
     // loop through neighbors
@@ -554,7 +583,7 @@ void colorMaze()
  */
 void colorSolution()
 {
-  node * v = start;
+  node * v = current;
   byte x, y;
   byte lx, ly; // last node pos
   byte r, c;
@@ -570,7 +599,7 @@ void colorSolution()
     r = MATRIX(y);
     c = MATRIX(x);
     grid[r][c] = SEEN_SOLUTION_COLOR;
-    if (v != start)
+    if (v != current)
     { // Color the in-between step from last node position
       r = MATRIX_INTERPOLATE(y, ly);
       c = MATRIX_INTERPOLATE(x, lx);
