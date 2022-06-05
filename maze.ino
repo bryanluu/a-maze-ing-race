@@ -725,21 +725,21 @@ void readInput()
 
   int dx = horizontal - CENTERPOINT;
   int dy = vertical - CENTERPOINT;
-  if (abs(dx) > INPUT_BUFFER)
+  if (abs(dx) > INPUT_BUFFER || abs(dy) > INPUT_BUFFER)
   {
-    if (dx > 0)
-      inputDir = HORIZONTAL_INCREASING;
-    else
-      inputDir = opposite(HORIZONTAL_INCREASING);
+    // only trigger if only one direction is input
+    if (abs(dx) <= INPUT_BUFFER || abs(dy) <= INPUT_BUFFER) 
+    {
+      if (dx > INPUT_BUFFER)
+        inputDir = HORIZONTAL_INCREASING;
+      else if (dx < -INPUT_BUFFER)
+        inputDir = opposite(HORIZONTAL_INCREASING);
+      if (dy > INPUT_BUFFER)
+        inputDir = VERTICAL_INCREASING;
+      else if (dy < -INPUT_BUFFER)
+        inputDir = opposite(VERTICAL_INCREASING);
+    }
   }
-  if (abs(dy) > INPUT_BUFFER)
-  {
-    if (dy > 0)
-      inputDir = VERTICAL_INCREASING;
-    else
-      inputDir = opposite(VERTICAL_INCREASING);
-  }
-
 
   buttonPressed = !digitalRead(BUTTON_PIN); // flip the signal, aka LOW means true, HIGH means false
 }
