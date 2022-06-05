@@ -92,7 +92,16 @@ enum Direction : int
 // solution parameters
 #define HINT_CHAR 'H'
 #define HINT_DURATION 3000 // in ms
-#define HINTS 3 // number of hints player has
+#define HINTS 3            // number of hints player has
+
+// input parameters
+#define HORIZONTAL_PIN A5
+#define VERTICAL_PIN A4
+#define BUTTON_PIN 0
+#define CENTERPOINT 666
+#define INPUT_BUFFER 100 // buffer to record a signal
+#define HORIZONTAL_INCREASING Right // direction in which the signal increases horizontally
+#define VERTICAL_INCREASING Down // direction in which the signal increases vertically
 
 void buildMaze();
 void calculateSolution();
@@ -112,6 +121,7 @@ void setup()
 {
   Serial.begin(9600);
   randomSeed(analogRead(0));
+  pinMode(0, INPUT_PULLUP);
   matrix.begin();
   matrix.setTextWrap(false);
   matrix.setTextSize(1);
@@ -683,35 +693,55 @@ void colorPlayer()
 }
 
 /**
+ * @brief Returns the opposing direction
+ * 
+ * @param dir a given direction
+ * @return Direction the opposite direction
+ */
+Direction opposite(Direction dir)
+{
+  switch (dir)
+  {
+  case Up:
+    return Down;
+  case Down:
+    return Up;
+  case Left:
+    return Right;
+  case Right:
+    return Left;
+  default:
+    return None;
+  }
+}
+
+/**
  * @brief Reads the input
  */
 void readInput()
 {
-  char c;
-  inputDir = None;
-  buttonPressed = false;
-  while (Serial.available())
+  int horizontal = analogRead(HORIZONTAL_PIN);
+  int vertical = analogRead(VERTICAL_PIN);
+
+  int dx = horizontal - CENTERPOINT;
+  int dy = vertical - CENTERPOINT;
+  if (abs(dx) > INPUT_BUFFER)
   {
-    c = Serial.read();
-    switch (c)
-    {
-    case UP_CHAR:
-      inputDir = Up;
-      return;
-    case LEFT_CHAR:
-      inputDir = Left;
-      return;
-    case DOWN_CHAR:
-      inputDir = Down;
-      return;
-    case RIGHT_CHAR:
-      inputDir = Right;
-      return;
-    case HINT_CHAR:
-      buttonPressed = true;
-      return;
-    }
+    if (dx > 0)
+      inputDir = HORIZONTAL_INCREASING;
+    else
+      inputDir = opposite(HORIZONTAL_INCREASING);
   }
+  if (abs(dy) > INPUT_BUFFER)
+  {
+    if (dy > 0)
+      inputDir = VERTICAL_INCREASING;
+    else
+      inputDir = opposite(VERTICAL_INCREASING);
+  }
+
+
+  buttonPressed = !digitalRead(BUTTON_PIN); // flip the signal, aka LOW means true, HIGH means false
 }
 
 /**
