@@ -108,7 +108,8 @@ void displayMaze();
 bool playerHasFinished();
 void displayFinishScreen();
 
-void setup() {
+void setup()
+{
   Serial.begin(9600);
   randomSeed(analogRead(0));
   matrix.begin();
@@ -122,7 +123,8 @@ bool buttonPressed = false; // variable to hold button state
 unsigned long currentTime = 0;
 unsigned long lastHintTime = -HINT_DURATION;
 byte hints = HINTS;
-void loop() {
+void loop()
+{
   // Clear background
   matrix.fillScreen(0);
 
@@ -173,7 +175,8 @@ void loop() {
 // number of edges
 #define N_EDGES (MAZE_CAPACITY - 1)
 
-struct node {
+struct node
+{
   byte pos = None; // the position in the maze
   int edges[MAX_NEIGHBORS]; // neighboring edges of this node
   int value = INT_MAX; // integer value to keep track of (cheapestEdgeWeight or distance)
@@ -262,7 +265,8 @@ bool compare(node * u, node * v);
 
 typedef std::vector<node *> vertex_list;
 
-namespace std {
+namespace std
+{
   template<>
   struct hash<node>
   {
@@ -273,7 +277,8 @@ namespace std {
   };
 }
 
-struct graph {
+struct graph
+{
   // hold graph vertices
   node vertices[MAZE_CAPACITY];
 
@@ -311,7 +316,8 @@ graph maze_g; // graph of the maze
  * @brief Builds the adjacency graph for the maze
  * 
  */
-void buildAdjacencyGraph() {
+void buildAdjacencyGraph()
+{
   for (byte r = 0; r < MAZE_HEIGHT; r++)
   {
     for (byte c = 0; c < MAZE_WIDTH; c++)
@@ -363,7 +369,8 @@ void setMazeEndpoints()
  * @brief Builds the maze graph using Prim's algorithm
  * 
  */
-void buildMaze() {
+void buildMaze()
+{
   // build the adjacency graph for the edge information
   buildAdjacencyGraph();
 
