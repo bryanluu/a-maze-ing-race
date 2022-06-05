@@ -99,7 +99,8 @@ void readInput();
 void movePlayer();
 void useHint();
 void colorMaze();
-void colorEndpoints();
+void colorStart();
+void colorFinish();
 void colorSolution();
 void colorPlayer();
 void displayMaze();
@@ -135,9 +136,10 @@ void loop() {
       useHint();
 
     colorMaze();
+    colorStart();
     if (currentTime - lastHintTime < HINT_DURATION)
       colorSolution();
-    colorEndpoints();
+    colorFinish();
     colorPlayer();
     displayMaze();
   }
@@ -481,16 +483,26 @@ bool isNearPlayer(byte x, byte y)
 }
 
 /**
- * @brief Colors the endpoints of the maze
+ * @brief Colors the start of the maze
  * 
  */
-void colorEndpoints()
+void colorStart()
 {
   // Color special nodes
   byte x, y;
   x = GET_X(start->pos);
   y = GET_Y(start->pos);
   grid[MATRIX(y)][MATRIX(x)] = SEEN_START_COLOR;
+}
+
+/**
+ * @brief Colors the finish of the maze
+ * 
+ */
+void colorFinish()
+{
+  // Color special nodes
+  byte x, y;
   x = GET_X(finish->pos);
   y = GET_Y(finish->pos);
   grid[MATRIX(y)][MATRIX(x)] = SEEN_FINISH_COLOR;
