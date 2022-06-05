@@ -258,10 +258,9 @@ struct node
 
     return ENCODE(x, y);
   }
-  
 };
 
-bool compare(node * u, node * v);
+bool compare(node *u, node *v);
 
 typedef std::vector<node *> vertex_list;
 
@@ -416,8 +415,8 @@ void buildMaze()
 
 /**
  * @brief Obtain the location of the player on the maze, closest to the finish
- * 
- * @return byte
+ *
+ * @return byte position of player on maze closest to finish
  */
 byte approximatePlayerLocation()
 {
@@ -590,10 +589,35 @@ void colorMaze()
  */
 void colorSolution()
 {
-  node * v = current;
+  node *v = current;
+  if (playerX % 2 == 0 || playerY % 2 == 0) // player is in-between nodes
+  {
+    node *a, *b;
+    byte p1, p2;
+    if (playerX % 2 == 0)
+    {
+      // in a horizontal corridor
+      p1 = ENCODE(MAZE(playerX), MAZE(playerY));
+      p2 = ENCODE(MAZE(playerX + 1), MAZE(playerY));
+    }
+    else
+    {
+      // in a vertical corridor
+      p1 = ENCODE(MAZE(playerX), MAZE(playerY));
+      p2 = ENCODE(MAZE(playerX), MAZE(playerY + 1));
+    }
+    a = &maze_g.vertices[p1];
+    b = &maze_g.vertices[p2];
+    if (a->value > b->value)
+    {
+      v = b;
+    }
+  }
+
   byte x, y;
   byte lx, ly; // last node pos
   byte r, c;
+  bool started = false;
   while (true) // loop until we reach the finish
   {
     // Update last node position
@@ -606,15 +630,16 @@ void colorSolution()
     r = MATRIX(y);
     c = MATRIX(x);
     grid[r][c] = SEEN_SOLUTION_COLOR;
-    if (v != current)
+    if (started)
     { // Color the in-between step from last node position
       r = MATRIX_INTERPOLATE(y, ly);
       c = MATRIX_INTERPOLATE(x, lx);
       grid[r][c] = SEEN_SOLUTION_COLOR;
-    }
+    } else
+    started = true;
     if (v == finish) // if we've reached the finish
-      break; // stop loop
-    
+      break;         // stop loop
+
     v = &maze_g.vertices[v->id]; // move to predecessor
   }
 }
