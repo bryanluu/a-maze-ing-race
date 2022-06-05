@@ -99,7 +99,7 @@ enum Direction : int
 #define VERTICAL_PIN A4
 #define BUTTON_PIN 0
 #define CENTERPOINT 666
-#define INPUT_BUFFER 100 // buffer to record a signal
+#define INPUT_BUFFER 200 // buffer to record a signal
 #define HORIZONTAL_INCREASING Right // direction in which the signal increases horizontally
 #define VERTICAL_INCREASING Down // direction in which the signal increases vertically
 
