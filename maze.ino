@@ -150,9 +150,9 @@ void loop()
   // Clear background
   matrix.fillScreen(0);
 
+  currentTime = millis();
   if (!playerHasFinished())
   {
-    currentTime = millis();
 
     readInput();
     movePlayer();
@@ -787,54 +787,44 @@ void readInput()
   int dx = horizontal - CENTERPOINT;
   int dy = vertical - CENTERPOINT;
   int inputFrequency = DEFAULT_INPUT_FREQUENCY;
+  inputDir = None;
   if (abs(dx) > INPUT_BUFFER || abs(dy) > INPUT_BUFFER)
   {
     // only trigger if only one direction is input
     if (abs(dx) <= INPUT_BUFFER || abs(dy) <= INPUT_BUFFER) 
     {
-      inputDir = None;
       if (dx > INPUT_BUFFER)
       {
         if (abs(horizontal - INPUT_MAX) < FAST_INPUT_THRESHOLD)
           inputFrequency = FAST_INPUT_FREQUENCY;
         if (currentTime - lastInputTime > inputFrequency)
-        {
           inputDir = HORIZONTAL_INCREASING;
-          lastInputTime = currentTime;
-        }
       }
       else if (dx < -INPUT_BUFFER)
       {
         if (abs(horizontal - INPUT_MIN) < FAST_INPUT_THRESHOLD)
           inputFrequency = FAST_INPUT_FREQUENCY;
         if (currentTime - lastInputTime > inputFrequency)
-        {
           inputDir = opposite(HORIZONTAL_INCREASING);
-          lastInputTime = currentTime;
-        }
       }
       if (dy > INPUT_BUFFER)
       {
         if (abs(vertical - INPUT_MAX) < FAST_INPUT_THRESHOLD)
           inputFrequency = FAST_INPUT_FREQUENCY;
         if (currentTime - lastInputTime > inputFrequency)
-        {
           inputDir = VERTICAL_INCREASING;
-          lastInputTime = currentTime;
-        }
       }
       else if (dy < -INPUT_BUFFER)
       {
         if (abs(vertical - INPUT_MIN) < FAST_INPUT_THRESHOLD)
           inputFrequency = FAST_INPUT_FREQUENCY;
         if (currentTime - lastInputTime > inputFrequency)
-        {
           inputDir = opposite(VERTICAL_INCREASING);
-          lastInputTime = currentTime;
-        }
       }
     }
   }
+  if (inputDir != None)
+    lastInputTime = currentTime;
 
   buttonPressed = !digitalRead(BUTTON_PIN); // flip the signal, aka LOW means true, HIGH means false
 }
