@@ -120,7 +120,8 @@ void colorSolution();
 void colorPlayer();
 void displayMaze();
 bool playerHasFinished();
-void displayFinishScreen();
+bool displayFinishScreen();
+void resetMaze();
 
 void setup()
 {
@@ -165,7 +166,11 @@ void loop()
   }
   else
   {
-    displayFinishScreen();
+    bool finished = displayFinishScreen();
+    if (finished)
+    {
+      resetMaze();
+    }
   }
 
 #if !defined(__AVR__)
@@ -321,14 +326,45 @@ struct graph
     target->edges[(*source) - (*target)] = weight;
     return true;
   }
+
+  /**
+   * @brief Reset the graph's data
+   * 
+   */
+  void reset()
+  {
+    for (byte p = 0; p < MAZE_CAPACITY; p++)
+    {
+      node * v = &vertices[p];
+      // reset the node's data
+      v->pos = None;
+      for (byte i = 0; i < MAX_NEIGHBORS; i++)
+        v->edges[i] = None;
+      v->value = INT_MAX;
+      v->id = None;
+      v->used = false;
+    }
+  }
 };
 
-graph adj_g; // adjacency graph of maze
+graph adj_g;  // adjacency graph of maze
 graph maze_g; // graph of the maze
 
 /**
- * @brief Builds the adjacency graph for the maze
+ * @brief Resets the maze to a new one
  * 
+ */
+void resetMaze()
+{
+  adj_g.reset();
+  maze_g.reset();
+  buildMaze();
+  hints = HINTS;
+}
+
+/**
+ * @brief Builds the adjacency graph for the maze
+ *
  */
 void buildAdjacencyGraph()
 {
@@ -838,23 +874,26 @@ int16_t textMin = (int16_t)sizeof(congrats) * -6;
 int16_t hue = 0;
 /**
  * @brief Displays the finishing graphics
- * 
+ *
+ * @return whether the finish screen is done
  */
-void displayFinishScreen()
+bool displayFinishScreen()
 {
   matrix.setTextColor(matrix.ColorHSV(hue, 255, 255, true));
-  matrix.setCursor(textX, matrix.height()/2 - 4);
+  matrix.setCursor(textX, matrix.height() / 2 - 4);
   matrix.print(congrats);
   textX--; // move text left
   if (textX < textMin)
   {
     delay(CONGRATS_PAUSE_TIME);
     textX = matrix.width();
+    return true;
   }
   hue += 7;
   if (hue >= 1536)
     hue = 0;
   delay(CONGRATS_SCROLL_DELAY);
+  return false;
 }
 
 /**
