@@ -42,13 +42,15 @@ const char congrats[] PROGMEM = "You won, congratulations!!!"; // Congratulation
 #define MATRIX_WIDTH 31
 #define MATRIX_HEIGHT 31
 #define MAZE(p) (((p) - 1)/2) // conversion from matrix coordinates to maze coordinates
-#define MAZE_WIDTH MAZE(MATRIX_WIDTH)
-#define MAZE_HEIGHT MAZE(MATRIX_HEIGHT)
-#define MAZE_CAPACITY ((MAZE_WIDTH) * (MAZE_HEIGHT))
 #define MATRIX(p) (2*(p) + 1) // conversion from maze coordinates to matrix coordinates
 #define MATRIX_INTERPOLATE(p, q) ((p) + (q) + 1) // interpolate between maze coordinates in matrix space
 #define VISIBILITY 1 // in pixels (1 means player can see up to 1 pixel away)
 #define SHROUD true // control whether the unseen portions of the maze are shrouded
+
+// maze dimensions
+byte mazeWidth = 5;
+byte mazeHeight = 5;
+
 
 // colors
 #define HUE(deg) ((long) (1536 * ((deg)/360.0))) // conversion to hue value from angle
@@ -187,15 +189,15 @@ void loop()
 // ########## GRAPH CODE ##########
 
 // encodes the position given x and y
-#define ENCODE(x, y) ((x) + (MAZE_WIDTH)*(y))
+#define ENCODE(x, y) ((x) + (mazeWidth) * (y))
 // decodes the x value of position
-#define GET_X(p) ((p) % (MAZE_WIDTH))
+#define GET_X(p) ((p) % (mazeWidth))
 // decodes the y value of position
-#define GET_Y(p) ((p) / (MAZE_WIDTH))
+#define GET_Y(p) ((p) / (mazeWidth))
 // max number of neighbors this node can have
 #define MAX_NEIGHBORS 4
 // number of edges
-#define N_EDGES (MAZE_CAPACITY - 1)
+#define MAX_EDGES ((MAZE(MATRIX_WIDTH) * MAZE(MATRIX_HEIGHT)) - 1)
 
 typedef byte coord; // specify type for position
 
@@ -277,7 +279,7 @@ struct node
     x = GET_X(pos) + dx;
     y = GET_Y(pos) + dy;
     // if new position is invalid
-    if (x < 0 || x >= MAZE_WIDTH || y < 0 || y >= MAZE_HEIGHT)
+    if (x < 0 || x >= mazeWidth || y < 0 || y >= mazeHeight)
       return None;
 
     return ENCODE(x, y);
@@ -302,8 +304,20 @@ namespace std
 
 struct graph
 {
-  // hold graph vertices
-  node vertices[MAZE_CAPACITY];
+  node * vertices; // array of graph vertices
+  byte size; // number of vertices
+
+  /**
+   * @brief Construct a new graph object
+   * 
+   * @param width width of new graph
+   * @param height height of new graph
+   */
+  graph(byte width, byte height)
+  {
+    size = width * height;
+    vertices = new node[size];
+  }
 
   /**
    * Insert a new directed edge with a positive edge weight into the graph.
@@ -317,7 +331,7 @@ struct graph
   bool insertEdge(coord s, coord t, int weight)
   {
     // source or target vertices invalid
-    if (s >= (MAZE_CAPACITY) || t >= (MAZE_CAPACITY))
+    if (s >= size || t >= size)
       return false;
 
     // invalid negative weight
@@ -332,27 +346,17 @@ struct graph
   }
 
   /**
-   * @brief Reset the graph's data
+   * @brief Destroy the graph object
    * 
    */
-  void reset()
+  ~graph()
   {
-    for (coord p = 0; p < MAZE_CAPACITY; p++)
-    {
-      node * v = &vertices[p];
-      // reset the node's data
-      v->pos = None;
-      for (coord i = 0; i < MAX_NEIGHBORS; i++)
-        v->weights[i] = None;
-      v->value = INT_MAX;
-      v->id = None;
-      v->used = false;
-    }
+    delete[] vertices;
   }
 };
 
-graph adj_g;  // adjacency graph of maze
-graph maze_g; // graph of the maze
+graph * adj_g;  // adjacency graph of maze
+graph * maze_g; // graph of the maze
 
 /**
  * @brief Resets the maze to a new one
@@ -360,8 +364,8 @@ graph maze_g; // graph of the maze
  */
 void resetMaze()
 {
-  adj_g.reset();
-  maze_g.reset();
+  delete adj_g;
+  delete maze_g;
   buildMaze();
   hints = HINTS;
 }
@@ -372,20 +376,20 @@ void resetMaze()
  */
 void buildAdjacencyGraph()
 {
-  for (byte r = 0; r < MAZE_HEIGHT; r++)
+  for (byte r = 0; r < mazeWidth; r++)
   {
-    for (byte c = 0; c < MAZE_WIDTH; c++)
+    for (byte c = 0; c < mazeHeight; c++)
     {
       coord p = ENCODE(c, r);
-      node *v = &adj_g.vertices[p];
+      node *v = &adj_g->vertices[p];
       v->pos = p; // set the pos of the node
 
       // connect to top node
       if (r > 0)
-        adj_g.insertEdge(p, ENCODE(c, r-1), random(N_EDGES));
+        adj_g->insertEdge(p, ENCODE(c, r - 1), random(MAX_EDGES));
       // connect to left node
       if (c > 0)
-        adj_g.insertEdge(p, ENCODE(c-1, r), random(N_EDGES));
+        adj_g->insertEdge(p, ENCODE(c - 1, r), random(MAX_EDGES));
     }
   }
 }
@@ -413,8 +417,8 @@ byte playerX, playerY;
 void setMazeEndpoints()
 {
   // set endpoints
-  start = &maze_g.vertices[0];
-  finish = &maze_g.vertices[MAZE_CAPACITY - 1];
+  start = &maze_g->vertices[0];
+  finish = &maze_g->vertices[maze_g->size - 1];
   playerX = MATRIX(GET_X(start->pos));
   playerY = MATRIX(GET_Y(start->pos));
 }
@@ -425,13 +429,16 @@ void setMazeEndpoints()
  */
 void buildMaze()
 {
+  adj_g = new graph(mazeWidth, mazeHeight);
+  maze_g = new graph(mazeWidth, mazeHeight);
+
   // build the adjacency graph for the edge information
   buildAdjacencyGraph();
 
   // initialize the queue of vertices not in the maze
   std::priority_queue<node *, vertex_list, decltype(&compare)> pq(&compare);
-  for (coord p = 0; p < MAZE_CAPACITY; p++)
-    pq.push(&adj_g.vertices[p]);
+  for (coord p = 0; p < adj_g->size; p++)
+    pq.push(&adj_g->vertices[p]);
 
   while (!pq.empty()) // until the maze has all vertices
   {
@@ -440,12 +447,12 @@ void buildMaze()
     if (v->used) // if this vertex is already in the maze, skip it
       continue;
 
-    v->used = true; // mark v as a used vertex in the maze
-    node * u = &maze_g.vertices[v->pos]; // set v to maze vertex
-    u->pos = v->pos; // add the vertex to the maze
-    if (v->id != None) // if v touches the maze, add cheapest neighboring edge to maze
-      maze_g.insertEdge(v->pos, v->pos_relative(v->id), v->value);
-    
+    v->used = true;                     // mark v as a used vertex in the maze
+    node *u = &maze_g->vertices[v->pos]; // set v to maze vertex
+    u->pos = v->pos;                    // add the vertex to the maze
+    if (v->id != None)                  // if v touches the maze, add cheapest neighboring edge to maze
+      maze_g->insertEdge(v->pos, v->pos_relative(v->id), v->value);
+
     // loop through outgoing edges of vertex
     for (byte i = 0; i < MAX_NEIGHBORS; i++)
     {
@@ -454,7 +461,7 @@ void buildMaze()
         continue;
 
       coord n = v->pos_relative(i);  // get neighbor index
-      node *w = &adj_g.vertices[n]; // neighbor node
+      node *w = &adj_g->vertices[n]; // neighbor node
       if (!w->used && e < w->value) // if a new neighboring cheapest edge is found
       {
         // update neighbor's cheapest edge
@@ -489,9 +496,9 @@ node * current; // approximate node of player in maze space
 void calculateSolution()
 {
   // initialize vertices
-  for (coord p = 0; p < MAZE_CAPACITY; p++)
+  for (coord p = 0; p < maze_g->size; p++)
   {
-    node *v = &maze_g.vertices[p];
+    node *v = &maze_g->vertices[p];
     v->value = INT_MAX;
     v->id = None;
     v->used = false;
@@ -502,10 +509,10 @@ void calculateSolution()
   finish->used = true; // mark the finish as visited
 
   coord playerPos = approximatePlayerLocation();
-  current = &maze_g.vertices[playerPos];
+  current = &maze_g->vertices[playerPos];
 
   // initialize queue of vertices
-  std::priority_queue<node*, vertex_list, decltype(&compare)> pq(&compare);
+  std::priority_queue<node *, vertex_list, decltype(&compare)> pq(&compare);
   pq.push(finish);
 
   while (!pq.empty()) // until the queue is empty
@@ -523,7 +530,7 @@ void calculateSolution()
         continue;
 
       coord n = u->pos_relative(i); // get neighbor index
-      node *v = &maze_g.vertices[n]; // neighbor node
+      node *v = &maze_g->vertices[n]; // neighbor node
       int alt = u->value + e;
       if (!v->used && alt < v->value)
       {
@@ -546,9 +553,9 @@ bool seen[MATRIX_HEIGHT][MATRIX_WIDTH]; // which pixels the player has seen
 void displayMaze()
 {
   uint16_t color;
-  for (byte r = 0; r < MATRIX_HEIGHT; r++)
+  for (byte r = 0; r < MATRIX(mazeHeight); r++)
   {
-    for (byte c = 0; c < MATRIX_WIDTH; c++)
+    for (byte c = 0; c < MATRIX(mazeWidth); c++)
     {
       if (!SHROUD || seen[r][c] || grid[r][c] == SEEN_FINISH_COLOR)
         color = grid[r][c]; // show seen pixels
@@ -612,7 +619,7 @@ void colorMaze()
     }
   }
   byte x, y;
-  for (coord p = 0; p < MAZE_CAPACITY; p++)
+  for (coord p = 0; p < maze_g->size; p++)
   {
     x = GET_X(p);
     y = GET_Y(p);
@@ -622,13 +629,13 @@ void colorMaze()
 
     // color the edge nodes
     byte x2, y2;
-    node *v = &maze_g.vertices[p];
+    node *v = &maze_g->vertices[p];
     for (coord i = 0; i < MAX_NEIGHBORS; i++)
     {
       if (v->weights[i] == None) // if edge doesn't exist
         continue;
 
-      node *u = &maze_g.vertices[v->pos_relative(i)];
+      node *u = &maze_g->vertices[v->pos_relative(i)];
       x2 = GET_X(u->pos);
       y2 = GET_Y(u->pos);
       r = MATRIX_INTERPOLATE(y, y2);
@@ -661,8 +668,8 @@ void colorSolution()
       p1 = ENCODE(MAZE(playerX), MAZE(playerY));
       p2 = ENCODE(MAZE(playerX), MAZE(playerY + 1));
     }
-    a = &maze_g.vertices[p1];
-    b = &maze_g.vertices[p2];
+    a = &maze_g->vertices[p1];
+    b = &maze_g->vertices[p2];
     if (a->value > b->value)
     {
       v = b;
@@ -695,7 +702,7 @@ void colorSolution()
     if (v == finish) // if we've reached the finish
       break;         // stop loop
 
-    v = &maze_g.vertices[v->id]; // move to predecessor
+    v = &maze_g->vertices[v->id]; // move to predecessor
   }
 }
 
