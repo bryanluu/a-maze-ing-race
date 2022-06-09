@@ -376,9 +376,9 @@ void resetMaze()
  */
 void buildAdjacencyGraph()
 {
-  for (byte r = 0; r < mazeWidth; r++)
+  for (byte r = 0; r < mazeHeight; r++)
   {
-    for (byte c = 0; c < mazeHeight; c++)
+    for (byte c = 0; c < mazeWidth; c++)
     {
       coord p = ENCODE(c, r);
       node *v = &adj_g->vertices[p];
