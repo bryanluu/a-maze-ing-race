@@ -437,18 +437,15 @@ void buildMaze()
 
   // initialize the queue of vertices not in the maze
   std::priority_queue<node *, vertex_list, decltype(&compare)> pq(&compare);
-  for (coord p = 0; p < adj_g->size; p++)
-    pq.push(&adj_g->vertices[p]);
+  pq.push(&adj_g->vertices[0]);
 
   while (!pq.empty()) // until the maze has all vertices
   {
-    node * v = pq.top(); // take the vertex with the cheapest edge
+    node *v = pq.top(); // take the vertex with the cheapest edge
     pq.pop();
-    if (v->used) // if this vertex is already in the maze, skip it
-      continue;
 
     v->used = true;                     // mark v as a used vertex in the maze
-    node *u = &maze_g->vertices[v->pos]; // set v to maze vertex
+    node *u = &maze_g->vertices[v->pos]; // set u to maze vertex
     u->pos = v->pos;                    // add the vertex to the maze
     if (v->id != None)                  // if v touches the maze, add cheapest neighboring edge to maze
       maze_g->insertEdge(v->pos, v->pos_relative(v->id), v->value);
