@@ -897,6 +897,7 @@ bool displayFinishScreen()
   {
     delay(CONGRATS_PAUSE_TIME);
     textX = matrix.width();
+    inputDir = None;
     return true;
   }
   hue += 7;
