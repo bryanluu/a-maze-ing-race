@@ -74,6 +74,8 @@ const char congrats[] PROGMEM = "You won, congratulations!!!"; // Congratulation
 #define NEAR_SOLUTION_COLOR (matrix.ColorHSV(H_YELLOW, 255, NEAR_BRIGHTNESS, true))
 #define PLAYER_COLOR (WHITE(NEAR_BRIGHTNESS))
 
+typedef byte coord; // used for position or direction
+
 enum Direction : int
 {
   None = -1,
@@ -195,17 +197,19 @@ void loop()
 // number of edges
 #define N_EDGES (MAZE_CAPACITY - 1)
 
+typedef byte coord; // specify type for position
+
 struct node
 {
-  byte pos = None; // the position in the maze
+  coord pos = None;         // the position in the maze
   int edges[MAX_NEIGHBORS]; // neighboring edges of this node
-  int value = INT_MAX; // integer value to keep track of (cheapestEdgeWeight or distance)
-  byte id = None; // id of edge or node to keep track of
-  bool used = false; // whether the node has been used in the maze
+  int value = INT_MAX;      // integer value to keep track of (cheapestEdgeWeight or distance)
+  coord id = None;          // id of edge or node to keep track of
+  bool used = false;        // whether the node has been used in the maze
 
-  node ()
+  node()
   {
-    for (byte i = 0; i < MAX_NEIGHBORS; i++)
+    for (coord i = 0; i < MAX_NEIGHBORS; i++)
       edges[i] = None;
   }
 
@@ -243,11 +247,11 @@ struct node
 
   /**
    * @brief Find the position by relative direction
-   * 
-   * @param dir 
-   * @return byte - the position in the relative direction
+   *
+   * @param dir
+   * @return coord - the position in the relative direction
    */
-  byte pos_relative(char dir)
+  coord pos_relative(char dir)
   {
     short dx, dy;
     dx = 0;
@@ -310,7 +314,7 @@ struct graph
    * @return true if the edge could be inserted or its weight updated, false if the edge with the
    *         same weight was already in the graph
    */
-  bool insertEdge(byte s, byte t, int weight)
+  bool insertEdge(coord s, coord t, int weight)
   {
     // source or target vertices invalid
     if (s >= (MAZE_CAPACITY) || t >= (MAZE_CAPACITY))
@@ -333,12 +337,12 @@ struct graph
    */
   void reset()
   {
-    for (byte p = 0; p < MAZE_CAPACITY; p++)
+    for (coord p = 0; p < MAZE_CAPACITY; p++)
     {
       node * v = &vertices[p];
       // reset the node's data
       v->pos = None;
-      for (byte i = 0; i < MAX_NEIGHBORS; i++)
+      for (coord i = 0; i < MAX_NEIGHBORS; i++)
         v->edges[i] = None;
       v->value = INT_MAX;
       v->id = None;
@@ -372,8 +376,8 @@ void buildAdjacencyGraph()
   {
     for (byte c = 0; c < MAZE_WIDTH; c++)
     {
-      byte p = ENCODE(c, r);
-      node * v = &adj_g.vertices[p];
+      coord p = ENCODE(c, r);
+      node *v = &adj_g.vertices[p];
       v->pos = p; // set the pos of the node
 
       // connect to top node
@@ -426,7 +430,7 @@ void buildMaze()
 
   // initialize the queue of vertices not in the maze
   std::priority_queue<node *, vertex_list, decltype(&compare)> pq(&compare);
-  for (byte p = 0; p < MAZE_CAPACITY; p++)
+  for (coord p = 0; p < MAZE_CAPACITY; p++)
     pq.push(&adj_g.vertices[p]);
 
   while (!pq.empty()) // until the maze has all vertices
@@ -446,11 +450,11 @@ void buildMaze()
     for (byte i = 0; i < MAX_NEIGHBORS; i++)
     {
       int e = v->edges[i]; // edge cost
-      if (e == None) // if edge doesn't exist
+      if (e == None)       // if edge doesn't exist
         continue;
 
-      byte n = v->pos_relative(i); // get neighbor index
-      node * w = &adj_g.vertices[n]; // neighbor node
+      coord n = v->pos_relative(i);  // get neighbor index
+      node *w = &adj_g.vertices[n]; // neighbor node
       if (!w->used && e < w->value) // if a new neighboring cheapest edge is found
       {
         // update neighbor's cheapest edge
@@ -467,13 +471,13 @@ void buildMaze()
 /**
  * @brief Obtain the location of the player on the maze, closest to the finish
  *
- * @return byte position of player on maze closest to finish
+ * @return coord position of player on maze closest to finish
  */
-byte approximatePlayerLocation()
+coord approximatePlayerLocation()
 {
   byte x = MAZE(playerX);
   byte y = MAZE(playerY);
-  byte pos = ENCODE(x, y);
+  coord pos = ENCODE(x, y);
   return pos;
 }
 
@@ -485,9 +489,9 @@ node * current; // approximate node of player in maze space
 void calculateSolution()
 {
   // initialize vertices
-  for (byte p = 0; p < MAZE_CAPACITY; p++)
+  for (coord p = 0; p < MAZE_CAPACITY; p++)
   {
-    node * v = &maze_g.vertices[p];
+    node *v = &maze_g.vertices[p];
     v->value = INT_MAX;
     v->id = None;
     v->used = false;
@@ -497,7 +501,7 @@ void calculateSolution()
   finish->value = 0;
   finish->used = true; // mark the finish as visited
 
-  byte playerPos = approximatePlayerLocation();
+  coord playerPos = approximatePlayerLocation();
   current = &maze_g.vertices[playerPos];
 
   // initialize queue of vertices
@@ -512,14 +516,14 @@ void calculateSolution()
       break; // we've reached the end of the maze!
 
     // loop through neighbors
-    for (byte i =  0; i < MAX_NEIGHBORS; i++)
+    for (coord i = 0; i < MAX_NEIGHBORS; i++)
     {
       int e = u->edges[i]; // edge cost
-      if (e == None) // if edge doesn't exist
+      if (e == None)       // if edge doesn't exist
         continue;
 
-      byte n = u->pos_relative(i); // get neighbor index
-      node * v = &maze_g.vertices[n]; // neighbor node
+      coord n = u->pos_relative(i); // get neighbor index
+      node *v = &maze_g.vertices[n]; // neighbor node
       int alt = u->value + e;
       if (!v->used && alt < v->value)
       {
@@ -608,7 +612,7 @@ void colorMaze()
     }
   }
   byte x, y;
-  for (byte p = 0; p < MAZE_CAPACITY; p++)
+  for (coord p = 0; p < MAZE_CAPACITY; p++)
   {
     x = GET_X(p);
     y = GET_Y(p);
@@ -618,8 +622,8 @@ void colorMaze()
 
     // color the edge nodes
     byte x2, y2;
-    node * v = &maze_g.vertices[p];
-    for (byte i = 0; i < MAX_NEIGHBORS; i++)
+    node *v = &maze_g.vertices[p];
+    for (coord i = 0; i < MAX_NEIGHBORS; i++)
     {
       if (v->edges[i] == None) // if edge doesn't exist
         continue;
