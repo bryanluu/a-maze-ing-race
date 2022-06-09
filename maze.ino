@@ -902,6 +902,9 @@ bool displayFinishScreen()
  */
 void useHint()
 {
+  if (currentTime - lastHintTime < HINT_DURATION)
+    return;
+
   if (--hints <= HINTS)
     lastHintTime = currentTime;
 }
