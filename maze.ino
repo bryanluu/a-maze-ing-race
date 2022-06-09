@@ -77,6 +77,8 @@ byte mazeHeight = 5;
 #define PLAYER_COLOR (WHITE(NEAR_BRIGHTNESS))
 
 typedef byte coord; // used for position or direction
+struct node; // define a node struct for later
+struct graph; // define a graph struct for later
 
 enum Direction : int
 {
