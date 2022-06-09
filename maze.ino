@@ -202,7 +202,7 @@ typedef byte coord; // specify type for position
 struct node
 {
   coord pos = None;         // the position in the maze
-  int edges[MAX_NEIGHBORS]; // neighboring edges of this node
+  int weights[MAX_NEIGHBORS]; // neighboring weights of edges of this node
   int value = INT_MAX;      // integer value to keep track of (cheapestEdgeWeight or distance)
   coord id = None;          // id of edge or node to keep track of
   bool used = false;        // whether the node has been used in the maze
@@ -210,7 +210,7 @@ struct node
   node()
   {
     for (coord i = 0; i < MAX_NEIGHBORS; i++)
-      edges[i] = None;
+      weights[i] = None;
   }
 
   bool operator==(const node &other) const
@@ -324,10 +324,10 @@ struct graph
     if (weight < 0)
       return false;
 
-    node * source = &vertices[s];
-    node * target = &vertices[t];
-    source->edges[(*target) - (*source)] = weight;
-    target->edges[(*source) - (*target)] = weight;
+    node *source = &vertices[s];
+    node *target = &vertices[t];
+    source->weights[(*target) - (*source)] = weight;
+    target->weights[(*source) - (*target)] = weight;
     return true;
   }
 
@@ -343,7 +343,7 @@ struct graph
       // reset the node's data
       v->pos = None;
       for (coord i = 0; i < MAX_NEIGHBORS; i++)
-        v->edges[i] = None;
+        v->weights[i] = None;
       v->value = INT_MAX;
       v->id = None;
       v->used = false;
@@ -449,7 +449,7 @@ void buildMaze()
     // loop through outgoing edges of vertex
     for (byte i = 0; i < MAX_NEIGHBORS; i++)
     {
-      int e = v->edges[i]; // edge cost
+      int e = v->weights[i]; // edge cost
       if (e == None)       // if edge doesn't exist
         continue;
 
@@ -458,7 +458,7 @@ void buildMaze()
       if (!w->used && e < w->value) // if a new neighboring cheapest edge is found
       {
         // update neighbor's cheapest edge
-        w->value = v->edges[i];
+        w->value = v->weights[i];
         w->id = ((*v) - (*w));
         pq.push(w);
       }
@@ -518,7 +518,7 @@ void calculateSolution()
     // loop through neighbors
     for (coord i = 0; i < MAX_NEIGHBORS; i++)
     {
-      int e = u->edges[i]; // edge cost
+      int e = u->weights[i]; // edge cost
       if (e == None)       // if edge doesn't exist
         continue;
 
@@ -625,10 +625,10 @@ void colorMaze()
     node *v = &maze_g.vertices[p];
     for (coord i = 0; i < MAX_NEIGHBORS; i++)
     {
-      if (v->edges[i] == None) // if edge doesn't exist
+      if (v->weights[i] == None) // if edge doesn't exist
         continue;
 
-      node * u = &maze_g.vertices[v->pos_relative(i)];
+      node *u = &maze_g.vertices[v->pos_relative(i)];
       x2 = GET_X(u->pos);
       y2 = GET_Y(u->pos);
       r = MATRIX_INTERPOLATE(y, y2);
