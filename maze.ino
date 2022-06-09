@@ -435,9 +435,15 @@ void buildMaze()
   // build the adjacency graph for the edge information
   buildAdjacencyGraph();
 
+  // initialize the vertices in the maze
+  for (coord p = 0; p < adj_g->size; p++)
+    maze_g->vertices[p].pos = p;
+
+  setMazeEndpoints();
+
   // initialize the queue of vertices not in the maze
   std::priority_queue<node *, vertex_list, decltype(&compare)> pq(&compare);
-  pq.push(&adj_g->vertices[0]);
+  pq.push(&adj_g->vertices[start->pos]); // build from start node
 
   while (!pq.empty()) // until the maze has all vertices
   {
@@ -445,8 +451,6 @@ void buildMaze()
     pq.pop();
 
     v->used = true;                     // mark v as a used vertex in the maze
-    node *u = &maze_g->vertices[v->pos]; // set u to maze vertex
-    u->pos = v->pos;                    // add the vertex to the maze
     if (v->id != None)                  // if v touches the maze, add cheapest neighboring edge to maze
       maze_g->insertEdge(v->pos, v->pos_relative(v->id), v->value);
 
@@ -468,8 +472,6 @@ void buildMaze()
       }
     }
   }
-
-  setMazeEndpoints();
 }
 
 /**
