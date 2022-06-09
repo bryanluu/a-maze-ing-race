@@ -359,6 +359,8 @@ struct graph
 
 graph * adj_g;  // adjacency graph of maze
 graph * maze_g; // graph of the maze
+uint16_t grid[MATRIX_HEIGHT][MATRIX_WIDTH]; // color of each pixel in matrix
+bool seen[MATRIX_HEIGHT][MATRIX_WIDTH]; // which pixels the player has seen
 
 /**
  * @brief Resets the maze to a new one
@@ -370,6 +372,14 @@ void resetMaze()
   delete maze_g;
   buildMaze();
   hints = HINTS;
+  for (byte r = 0; r < MATRIX_HEIGHT; r++)
+  {
+    for (byte c = 0; c < MATRIX_WIDTH; c++)
+    {
+      seen[r][c] = false;
+      grid[r][c] = BLACK;
+    }
+  }
 }
 
 /**
@@ -543,9 +553,6 @@ void calculateSolution()
     }
   }
 }
-
-uint16_t grid[MATRIX_HEIGHT][MATRIX_WIDTH]; // color of each pixel in matrix
-bool seen[MATRIX_HEIGHT][MATRIX_WIDTH]; // which pixels the player has seen
 
 /**
  * @brief Display the maze on the matrix
