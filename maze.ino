@@ -33,7 +33,6 @@ RGBmatrixPanel matrix(A, B, C, D, CLK, LAT, OE, true);
 
 // Similar to F(), but for PROGMEM string pointers rather than literals
 #define F2(progmem_ptr) (const __FlashStringHelper *)progmem_ptr
-const char congrats[] PROGMEM = "You won, congratulations!!!"; // Congratulations text
 #define CONGRATS_PAUSE_TIME 1000 // in ms
 #define CONGRATS_SCROLL_DELAY 1 // in ms
 
@@ -50,7 +49,6 @@ const char congrats[] PROGMEM = "You won, congratulations!!!"; // Congratulation
 // maze dimensions
 byte mazeWidth = 5;
 byte mazeHeight = 5;
-
 
 // colors
 #define HUE(deg) ((long) (1536 * ((deg)/360.0))) // conversion to hue value from angle
@@ -118,22 +116,6 @@ enum Direction : int
 #define START_DURATION 5000 // in ms
 #define START_DELAY 150 // in ms
 
-void displayStartScreen();
-void buildMaze();
-void calculateSolution();
-void readInput();
-void movePlayer();
-void useHint();
-void colorMaze();
-void colorStart();
-void colorFinish();
-void colorSolution();
-void colorPlayer();
-void displayMaze();
-bool playerHasFinished();
-bool displayFinishScreen();
-void resetMaze();
-
 // ########## SCENE CODE ##########
 
 /**
@@ -175,7 +157,16 @@ Scene * Scene::currentScene = nullptr;
 class StartScene : public Scene
 {
   private:
+    static const char textPlayer[] PROGMEM;
+    static const char textStart[] PROGMEM;
+    static const char textWall[] PROGMEM;
+    static const char textFinish[] PROGMEM;
+    static const char textHint[] PROGMEM;
     unsigned long startTime = 0;
+    int16_t textY;
+
+    void displayStartScreen();
+
   public:
     StartScene() : Scene()
     {
@@ -185,10 +176,44 @@ class StartScene : public Scene
     void start();
     void run();
 };
+const char StartScene::textPlayer[] PROGMEM = "You";
+const char StartScene::textStart[] PROGMEM = "Start";
+const char StartScene::textWall[] PROGMEM = "Wall";
+const char StartScene::textFinish[] PROGMEM = "End";
+const char StartScene::textHint[] PROGMEM = "Hint";
 StartScene startScene = StartScene();
 
 class MazeScene : public Scene
 {
+  private:
+    graph * adj_g;  // adjacency graph of maze
+    graph * maze_g; // graph of the maze
+    uint16_t grid[MATRIX_HEIGHT][MATRIX_WIDTH]; // color of each pixel in matrix
+    bool seen[MATRIX_HEIGHT][MATRIX_WIDTH]; // which pixels the player has seen
+    unsigned long lastHintTime = -HINT_DURATION;
+    byte hints = HINTS; // number of hints
+    node * startNode;
+    node * endNode;
+    byte playerX, playerY;
+
+    void resetMaze();
+    void buildAdjacencyGraph();
+    void buildMaze();
+    void setMazeEndpoints();
+    coord approximatePlayerLocation();
+    void calculateSolution();
+    bool isNearPlayer(byte x, byte y);
+    void movePlayer();
+    void useHint();
+    void colorMaze();
+    void colorStart();
+    void colorFinish();
+    void colorSolution();
+    void colorPlayer();
+    void brightenSurroundings();
+    bool playerHasFinished();
+    void displayMaze();
+
   public:
     MazeScene() : Scene()
     {
@@ -202,6 +227,13 @@ MazeScene mazeScene = MazeScene();
 
 class EndScene : public Scene
 {
+  private:
+    bool displayFinishScreen();
+    static const char congrats[] PROGMEM;
+    static int16_t textMin;
+    int16_t textX = matrix.width();
+    int16_t hue = 0;
+
   public:
     EndScene() : Scene()
     {
@@ -211,6 +243,8 @@ class EndScene : public Scene
     void start();
     void run();
 };
+const char EndScene::congrats[] PROGMEM = "You won, congratulations!!!"; // Congratulations text
+int16_t EndScene::textMin =  (int16_t)sizeof(congrats) * -6;
 EndScene endScene = EndScene();
 
 void setup()
@@ -221,14 +255,12 @@ void setup()
   matrix.begin();
   matrix.setTextWrap(false);
   matrix.setTextSize(1);
-  mazeScene.start();
+  startScene.start();
 }
 
 Direction inputDir = None; // variable to hold direction input state
 bool buttonPressed = false; // variable to hold button state
 unsigned long currentTime = 0;
-unsigned long lastHintTime = -HINT_DURATION;
-byte hints = HINTS;
 void loop()
 {
   // Clear background
@@ -246,7 +278,6 @@ void loop()
   matrix.swapBuffers(false);
 }
 
-int16_t textY;
 void StartScene::start()
 {
   Scene::start();
@@ -269,6 +300,8 @@ void MazeScene::start()
   resetMaze();
   inputDir = None;
   buttonPressed = false;
+  hints = HINTS;
+  lastHintTime = -HINT_DURATION;
 }
 
 void MazeScene::run()
@@ -294,8 +327,6 @@ void MazeScene::run()
   displayMaze();
 }
 
-int16_t textX = matrix.width();
-int16_t hue = 0;
 void EndScene::start()
 {
   Scene::start();
@@ -314,15 +345,10 @@ void EndScene::run()
 
 // ########## START CODE ##########
 
-const char textPlayer[] PROGMEM = "You";
-const char textStart[] PROGMEM = "Start";
-const char textWall[] PROGMEM = "Wall";
-const char textFinish[] PROGMEM = "End";
-const char textHint[] PROGMEM = "Hint";
 /**
  * @brief Displays the starting graphics
  */
-void displayStartScreen()
+void StartScene::displayStartScreen()
 {
   matrix.setCursor(0, textY--);
   matrix.setTextColor(PLAYER_COLOR);
@@ -507,21 +533,15 @@ struct graph
   }
 };
 
-graph * adj_g;  // adjacency graph of maze
-graph * maze_g; // graph of the maze
-uint16_t grid[MATRIX_HEIGHT][MATRIX_WIDTH]; // color of each pixel in matrix
-bool seen[MATRIX_HEIGHT][MATRIX_WIDTH]; // which pixels the player has seen
-
 /**
  * @brief Resets the maze to a new one
  * 
  */
-void resetMaze()
+void MazeScene::resetMaze()
 {
   delete adj_g;
   delete maze_g;
   buildMaze();
-  hints = HINTS;
   for (byte r = 0; r < MATRIX_HEIGHT; r++)
   {
     for (byte c = 0; c < MATRIX_WIDTH; c++)
@@ -536,7 +556,7 @@ void resetMaze()
  * @brief Builds the adjacency graph for the maze
  *
  */
-void buildAdjacencyGraph()
+void MazeScene::buildAdjacencyGraph()
 {
   for (byte r = 0; r < mazeHeight; r++)
   {
@@ -569,27 +589,24 @@ bool compare(node * u, node * v)
   return u->value > v->value;
 }
 
-node * start;
-node * finish;
-byte playerX, playerY;
 /**
  * @brief Set the end points of the maze object
  * 
  */
-void setMazeEndpoints()
+void MazeScene::setMazeEndpoints()
 {
   // set endpoints
-  start = &maze_g->vertices[0];
-  finish = &maze_g->vertices[maze_g->size - 1];
-  playerX = MATRIX(GET_X(start->pos));
-  playerY = MATRIX(GET_Y(start->pos));
+  startNode = &maze_g->vertices[0];
+  endNode = &maze_g->vertices[maze_g->size - 1];
+  playerX = MATRIX(GET_X(startNode->pos));
+  playerY = MATRIX(GET_Y(startNode->pos));
 }
 
 /**
  * @brief Builds the maze graph using Prim's algorithm
  * 
  */
-void buildMaze()
+void MazeScene::buildMaze()
 {
   adj_g = new graph(mazeWidth, mazeHeight);
   maze_g = new graph(mazeWidth, mazeHeight);
@@ -605,7 +622,7 @@ void buildMaze()
 
   // initialize the queue of vertices not in the maze
   std::priority_queue<node *, vertex_list, decltype(&compare)> pq(&compare);
-  pq.push(&adj_g->vertices[start->pos]); // build from start node
+  pq.push(&adj_g->vertices[startNode->pos]); // build from start node
 
   while (!pq.empty()) // until the maze has all vertices
   {
@@ -641,7 +658,7 @@ void buildMaze()
  *
  * @return coord position of player on maze closest to finish
  */
-coord approximatePlayerLocation()
+coord MazeScene::approximatePlayerLocation()
 {
   byte x = MAZE(playerX);
   byte y = MAZE(playerY);
@@ -654,7 +671,7 @@ node * current; // approximate node of player in maze space
  * @brief Calculates the shortest path from player position to finish using Dijkstra's algorithm
  * 
  */
-void calculateSolution()
+void MazeScene::calculateSolution()
 {
   // initialize vertices
   for (coord p = 0; p < maze_g->size; p++)
@@ -666,15 +683,15 @@ void calculateSolution()
   }
 
   // set finish distance to 0
-  finish->value = 0;
-  finish->used = true; // mark the finish as visited
+  endNode->value = 0;
+  endNode->used = true; // mark the finish as visited
 
   coord playerPos = approximatePlayerLocation();
   current = &maze_g->vertices[playerPos];
 
   // initialize queue of vertices
   std::priority_queue<node *, vertex_list, decltype(&compare)> pq(&compare);
-  pq.push(finish);
+  pq.push(endNode);
 
   while (!pq.empty()) // until the queue is empty
   {
@@ -708,7 +725,7 @@ void calculateSolution()
  * @brief Display the maze on the matrix
  * 
  */
-void displayMaze()
+void MazeScene::displayMaze()
 {
   uint16_t color;
   byte rowOffset, colOffset; // used for centering
@@ -735,7 +752,7 @@ void displayMaze()
  * @return true if close to player
  * @return false otherwise
  */
-bool isNearPlayer(byte x, byte y)
+bool MazeScene::isNearPlayer(byte x, byte y)
 {
   return (abs(x - playerX) <= VISIBILITY) && (abs(y - playerY) <= VISIBILITY);
 }
@@ -744,12 +761,12 @@ bool isNearPlayer(byte x, byte y)
  * @brief Colors the start of the maze
  * 
  */
-void colorStart()
+void MazeScene::colorStart()
 {
   // Color special nodes
   byte x, y;
-  x = GET_X(start->pos);
-  y = GET_Y(start->pos);
+  x = GET_X(startNode->pos);
+  y = GET_Y(startNode->pos);
   grid[MATRIX(y)][MATRIX(x)] = SEEN_START_COLOR;
 }
 
@@ -757,12 +774,12 @@ void colorStart()
  * @brief Colors the finish of the maze
  * 
  */
-void colorFinish()
+void MazeScene::colorFinish()
 {
   // Color special nodes
   byte x, y;
-  x = GET_X(finish->pos);
-  y = GET_Y(finish->pos);
+  x = GET_X(endNode->pos);
+  y = GET_Y(endNode->pos);
   grid[MATRIX(y)][MATRIX(x)] = SEEN_FINISH_COLOR;
 }
 
@@ -770,7 +787,7 @@ void colorFinish()
  * @brief Color the maze and walls
  * 
  */
-void colorMaze()
+void MazeScene::colorMaze()
 {
   for (byte r = 0; r < MATRIX_HEIGHT; r++)
   {
@@ -810,7 +827,7 @@ void colorMaze()
  * @brief Color the shortest path from start to finish
  * 
  */
-void colorSolution()
+void MazeScene::colorSolution()
 {
   node *v = current;
   if (playerX % 2 == 0 || playerY % 2 == 0) // player is in-between nodes
@@ -860,7 +877,7 @@ void colorSolution()
       grid[r][c] = SEEN_SOLUTION_COLOR;
     } else
     started = true;
-    if (v == finish) // if we've reached the finish
+    if (v == endNode) // if we've reached the finish
       break;         // stop loop
 
     v = &maze_g->vertices[v->id]; // move to predecessor
@@ -871,7 +888,7 @@ void colorSolution()
  * @brief Brighten pixels around player
  * 
  */
-void brightenSurroundings()
+void MazeScene::brightenSurroundings()
 {
   for (short x = playerX - VISIBILITY; x <= playerX + VISIBILITY; x++)
   {
@@ -899,7 +916,7 @@ void brightenSurroundings()
  * @brief Color the player position
  * 
  */
-void colorPlayer()
+void MazeScene::colorPlayer()
 {
   grid[playerY][playerX] = PLAYER_COLOR;
   brightenSurroundings();
@@ -986,7 +1003,7 @@ void readInput()
  * @brief Move the position of the player in the given direction
  * 
  */
-void movePlayer()
+void MazeScene::movePlayer()
 {
   short dx, dy;
   dx = 0;
@@ -1026,16 +1043,16 @@ void movePlayer()
  * @return true if player's position overlaps with the finish
  * @return false otherwise
  */
-bool playerHasFinished()
+bool MazeScene::playerHasFinished()
 {
-  return playerX == MATRIX(GET_X(finish->pos)) && playerY == MATRIX(GET_Y(finish->pos));
+  return playerX == MATRIX(GET_X(endNode->pos)) && playerY == MATRIX(GET_Y(endNode->pos));
 }
 
 /**
  * @brief Use a hint to show the solution for a short period of time
  * 
  */
-void useHint()
+void MazeScene::useHint()
 {
   if (currentTime - lastHintTime < HINT_DURATION)
     return;
@@ -1046,13 +1063,12 @@ void useHint()
 
 // ########## END CODE ##########
 
-int16_t textMin = (int16_t)sizeof(congrats) * -6;
 /**
  * @brief Displays the finishing graphics
  *
  * @return whether the finish screen is done
  */
-bool displayFinishScreen()
+bool EndScene::displayFinishScreen()
 {
   matrix.setTextColor(matrix.ColorHSV(hue, 255, 255, true));
   matrix.setCursor(textX, matrix.height() / 2 - 4);
