@@ -115,7 +115,8 @@ enum Direction : int
 #define FAST_INPUT_FREQUENCY 300 // input frequency at full speed
 #define FAST_INPUT_THRESHOLD 100 // how close to max/min should the input be considered fast
 
-void readInput();
+unsigned long lastInputTime = 0; // keeps track of last input of joystick
+void readInput(bool strobe = true);
 
 // Settings config
 #define SMALL_SIZE 5
@@ -320,6 +321,8 @@ void loop()
   matrix.swapBuffers(false);
 }
 
+// ########## SETTINGS CODE ##########
+
 void SettingsScene::start()
 {
   Scene::start();
@@ -336,13 +339,17 @@ void SettingsScene::run()
     return;
   }
 
-  readInput();
-  if (inputDir == Left)
+  readInput(false);
+  if (currentTime - lastInputTime >= DEFAULT_INPUT_FREQUENCY)
   {
-    choice = (Size) max(((int) choice) - 1, 0);
-  } else if (inputDir == Right)
-  {
-    choice = (Size) min(((int) choice) + 1, Sizes - 1);
+    if (inputDir == Left)
+    {
+      choice = (Size) max(((int) choice) - 1, 0);
+    } else if (inputDir == Right)
+    {
+      choice = (Size) min(((int) choice) + 1, Sizes - 1);
+    }
+    lastInputTime = currentTime;
   }
   displaySettings();
 }
@@ -1065,11 +1072,12 @@ Direction opposite(Direction dir)
   }
 }
 
-unsigned long lastInputTime = 0; // keeps track of last input of joystick
 /**
  * @brief Reads the input
+ * 
+ * @param strobe whether to "strobe" the analog inputs
  */
-void readInput()
+void readInput(bool strobe)
 {
   int horizontal = analogRead(HORIZONTAL_PIN);
   int vertical = analogRead(VERTICAL_PIN);
@@ -1077,7 +1085,8 @@ void readInput()
   int dx = horizontal - CENTERPOINT;
   int dy = vertical - CENTERPOINT;
   int inputFrequency = DEFAULT_INPUT_FREQUENCY;
-  inputDir = None;
+  if (strobe)
+    inputDir = None;
   if (abs(dx) > INPUT_BUFFER || abs(dy) > INPUT_BUFFER)
   {
     // only trigger if only one direction is input
@@ -1112,10 +1121,15 @@ void readInput()
           inputDir = opposite(VERTICAL_INCREASING);
       }
     }
+  } else if (!strobe)
+  {
+    inputDir = None;
   }
-  if (inputDir != None)
-    lastInputTime = currentTime;
 
+  if (strobe && inputDir != None)
+  {
+    lastInputTime = currentTime;
+  }
   buttonPressed = !digitalRead(BUTTON_PIN); // flip the signal, aka LOW means true, HIGH means false
 }
 
