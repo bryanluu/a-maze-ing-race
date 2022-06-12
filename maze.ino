@@ -172,6 +172,7 @@ class SettingsScene : public Scene
 {
   private:
     static const char *sizeText[] PROGMEM;
+    static const char *shroudText[] PROGMEM;
     static const char *visibilityText[] PROGMEM;
     static const char left[] PROGMEM;
     static const char right[] PROGMEM;
@@ -180,12 +181,16 @@ class SettingsScene : public Scene
     enum Setting : int
     {
       SizeSetting,
+      ShroudSetting,
       VizSetting,
       Settings
     };
     Setting currentSetting = SizeSetting;
     static const char **settingsText[] PROGMEM;
+    static const int options[];
+    static const int defaults[];
     byte choice = 2;
+    bool firstTime = true;
 
     void updateSetting();
     void displaySettings();
@@ -198,7 +203,14 @@ class SettingsScene : public Scene
       Medium,
       Large
     };
-    Size size = Size::Medium; // control the size of the maze
+    Size size; // control the size of the maze
+    enum class Shroud : int
+    {
+      Label,
+      On,
+      Off
+    };
+    Shroud shroud; // whether the shroud is on
     enum class Visibility : int
     {
       Label,
@@ -206,7 +218,7 @@ class SettingsScene : public Scene
       Medium,
       High
     };
-    Visibility visibility = Visibility::Medium; // control whether the unseen portions of the maze are shrouded
+    Visibility visibility; // control whether the unseen portions of the maze are shrouded
 
     SettingsScene() : Scene()
     {
@@ -217,10 +229,13 @@ class SettingsScene : public Scene
     void run();
 };
 const char *SettingsScene::sizeText[] PROGMEM = {"Size", "S", "M", "L"};
+const char *SettingsScene::shroudText[] PROGMEM = {"Shrd?", "Y", "N"};
 const char *SettingsScene::visibilityText[] PROGMEM = {"Viz", "L", "M", "H"};
 const char SettingsScene::left[] PROGMEM = "<";
 const char SettingsScene::right[] PROGMEM = ">";
-const char **SettingsScene::settingsText[] PROGMEM = {SettingsScene::sizeText, SettingsScene::visibilityText};
+const int SettingsScene::options[] = {3, 2, 3};
+const int SettingsScene::defaults[] = {2, 1, 2};
+const char **SettingsScene::settingsText[] PROGMEM = {SettingsScene::sizeText, SettingsScene::shroudText, SettingsScene::visibilityText};
 SettingsScene settingsScene = SettingsScene();
 
 class StartScene : public Scene
@@ -358,6 +373,10 @@ void SettingsScene::start()
   buttonPressed = false;
   lastButtonState = false;
   currentSetting = Setting::SizeSetting;
+  if (firstTime)
+    choice = defaults[currentSetting];
+  else
+    choice = (int) size;
 }
 
 void SettingsScene::run()
@@ -369,6 +388,7 @@ void SettingsScene::run()
     if (currentSetting == Setting::Settings)
     {
       startScene.start();
+      firstTime = false;
       return;
     }
   }
@@ -379,10 +399,10 @@ void SettingsScene::run()
   {
     if (inputDir == Left)
     {
-      choice = constrain(choice - 1, 1, OPTIONS);
+      choice = constrain(choice - 1, 1, options[currentSetting]);
     } else if (inputDir == Right)
     {
-      choice = constrain(choice + 1, 1, OPTIONS);
+      choice = constrain(choice + 1, 1, options[currentSetting]);
     }
     lastInputTime = currentTime;
     lastInputDir = inputDir;
@@ -396,12 +416,21 @@ void SettingsScene::updateSetting()
   {
   case SizeSetting:
     size = (Size) choice;
+    if (!firstTime)
+      choice = (int) shroud;
+    break;
+  case ShroudSetting:
+    shroud = (Shroud) choice;
+    if (!firstTime)
+      choice = (int) visibility;
     break;
   case VizSetting:
     visibility = (Visibility) choice;
     break;
   }
   currentSetting = (Setting) (currentSetting + 1);
+  if (firstTime)
+    choice = defaults[currentSetting];
 }
 
 /**
@@ -419,7 +448,7 @@ void SettingsScene::displaySettings()
   else
     matrix.setTextColor(SETTINGS_UNSELECTED_TEXT_COLOR);
   matrix.print(left);
-  for (byte i = 1; i <= OPTIONS; i++)
+  for (byte i = 1; i <= options[currentSetting]; i++)
   {
     if (i == choice)
       matrix.setTextColor(SETTINGS_SELECTED_TEXT_COLOR);
@@ -907,7 +936,7 @@ void MazeScene::displayMaze()
   {
     for (byte c = 0; c < MATRIX(mazeWidth); c++)
     {
-      if (!SHROUD || settingsScene.visibility >= SettingsScene::Visibility::High || seen[r][c] || grid[r][c] == SEEN_FINISH_COLOR)
+      if (!SHROUD || settingsScene.shroud == SettingsScene::Shroud::Off || seen[r][c] || grid[r][c] == SEEN_FINISH_COLOR)
         color = grid[r][c]; // show seen pixels
       else
         color = BLACK; // shroud maze sections that haven't been seen
