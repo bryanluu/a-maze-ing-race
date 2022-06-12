@@ -129,15 +129,79 @@ bool playerHasFinished();
 bool displayFinishScreen();
 void resetMaze();
 
+// ########## SCENE CODE ##########
+
+/**
+ * @brief Describes a scene of the game
+ * 
+ */
+class Scene
+{
+  public:
+    static Scene * currentScene; // which scene is running
+    String name;
+
+    Scene()
+    {
+      name = "_";
+    }
+
+    /**
+     * @brief Any initializing actions go here
+     * 
+     */
+    virtual void start()
+    {
+      if (currentScene != this)
+        currentScene = this;
+    }
+
+    /**
+     * @brief Core code during scene goes here
+     * 
+     */
+    virtual void run()
+    {
+      // do nothing
+    }
+};
+Scene * Scene::currentScene = nullptr;
+
+class MazeScene : public Scene
+{
+  public:
+    MazeScene() : Scene()
+    {
+      name = "Maze";
+    }
+
+    void start();
+    void run();
+};
+MazeScene mazeScene = MazeScene();
+
+class EndScene : public Scene
+{
+  public:
+    EndScene() : Scene()
+    {
+      name = "End";
+    }
+
+    void start();
+    void run();
+};
+EndScene endScene = EndScene();
+
 void setup()
 {
   Serial.begin(9600);
-  randomSeed(analogRead(0));
+  randomSeed(12);
   pinMode(0, INPUT_PULLUP);
   matrix.begin();
   matrix.setTextWrap(false);
   matrix.setTextSize(1);
-  buildMaze();
+  mazeScene.start();
 }
 
 Direction inputDir = None; // variable to hold direction input state
@@ -151,12 +215,34 @@ void loop()
   matrix.fillScreen(0);
 
   currentTime = millis();
-  if (!playerHasFinished())
-  {
+  Scene::currentScene->run();
 
-    readInput();
-    movePlayer();
-    if (buttonPressed)
+#if !defined(__AVR__)
+  // On non-AVR boards, delay slightly so screen updates aren't too quick.
+  delay(20);
+#endif
+
+  // Update display
+  matrix.swapBuffers(false);
+}
+
+void MazeScene::start()
+{
+  Scene::start();
+  resetMaze();
+  inputDir = None;
+  buttonPressed = false;
+}
+
+void MazeScene::run()
+{
+  if (playerHasFinished())
+    endScene.start();
+
+  Scene::run();
+  readInput();
+  movePlayer();
+  if (buttonPressed)
     {
       calculateSolution();
       useHint();
@@ -167,25 +253,29 @@ void loop()
     if (currentTime - lastHintTime < HINT_DURATION)
       colorSolution();
     colorFinish();
-    colorPlayer();
-    displayMaze();
-  }
-  else
+  colorPlayer();
+  displayMaze();
+}
+
+int16_t textX = matrix.width();
+int16_t hue = 0;
+void EndScene::start()
+{
+  Scene::start();
+  textX = matrix.width();
+  hue = 0;
+}
+
+void EndScene::run()
+{
+  Scene::run();
+  bool finished = displayFinishScreen();
+  if (finished)
   {
-    bool finished = displayFinishScreen();
-    if (finished)
-    {
-      resetMaze();
-    }
+    mazeScene.start();
+    Serial.println(Scene::currentScene->name);
   }
-
-#if !defined(__AVR__)
-  // On non-AVR boards, delay slightly so screen updates aren't too quick.
-  delay(20);
-#endif
-
-  // Update display
-  matrix.swapBuffers(false);
+  Serial.println(finished);
 }
 
 // ########## GRAPH CODE ##########
@@ -881,9 +971,20 @@ bool playerHasFinished()
   return playerX == MATRIX(GET_X(finish->pos)) && playerY == MATRIX(GET_Y(finish->pos));
 }
 
-int16_t textX = matrix.width();
+/**
+ * @brief Use a hint to show the solution for a short period of time
+ * 
+ */
+void useHint()
+{
+  if (currentTime - lastHintTime < HINT_DURATION)
+    return;
+
+  if (--hints <= HINTS)
+    lastHintTime = currentTime;
+}
+
 int16_t textMin = (int16_t)sizeof(congrats) * -6;
-int16_t hue = 0;
 /**
  * @brief Displays the finishing graphics
  *
@@ -898,8 +999,6 @@ bool displayFinishScreen()
   if (textX < textMin)
   {
     delay(CONGRATS_PAUSE_TIME);
-    textX = matrix.width();
-    inputDir = None;
     return true;
   }
   hue += 7;
@@ -907,17 +1006,4 @@ bool displayFinishScreen()
     hue = 0;
   delay(CONGRATS_SCROLL_DELAY);
   return false;
-}
-
-/**
- * @brief Use a hint to show the solution for a short period of time
- * 
- */
-void useHint()
-{
-  if (currentTime - lastHintTime < HINT_DURATION)
-    return;
-
-  if (--hints <= HINTS)
-    lastHintTime = currentTime;
 }
