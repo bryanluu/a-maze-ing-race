@@ -114,6 +114,11 @@ enum Direction : int
 #define FAST_INPUT_FREQUENCY 300 // input frequency at full speed
 #define FAST_INPUT_THRESHOLD 100 // how close to max/min should the input be considered fast
 
+// Start Scene config
+#define START_DURATION 5000 // in ms
+#define START_DELAY 150 // in ms
+
+void displayStartScreen();
 void buildMaze();
 void calculateSolution();
 void readInput();
@@ -166,6 +171,21 @@ class Scene
     }
 };
 Scene * Scene::currentScene = nullptr;
+
+class StartScene : public Scene
+{
+  private:
+    unsigned long startTime = 0;
+  public:
+    StartScene() : Scene()
+    {
+      name = "Start";
+    }
+
+    void start();
+    void run();
+};
+StartScene startScene = StartScene();
 
 class MazeScene : public Scene
 {
@@ -226,6 +246,23 @@ void loop()
   matrix.swapBuffers(false);
 }
 
+int16_t textY;
+void StartScene::start()
+{
+  Scene::start();
+  startTime = currentTime;
+  textY = 5;
+}
+
+void StartScene::run()
+{
+  Scene::run();
+  if (currentTime - startTime >= START_DURATION)
+    mazeScene.start();
+  displayStartScreen();
+  delay(START_DELAY);
+}
+
 void MazeScene::start()
 {
   Scene::start();
@@ -271,12 +308,35 @@ void EndScene::run()
   Scene::run();
   bool finished = displayFinishScreen();
   if (finished)
-  {
-    mazeScene.start();
-    Serial.println(Scene::currentScene->name);
-  }
+    startScene.start();
   Serial.println(finished);
 }
+
+// ########## START CODE ##########
+
+const char textPlayer[] PROGMEM = "You";
+const char textStart[] PROGMEM = "Start";
+const char textWall[] PROGMEM = "Wall";
+const char textFinish[] PROGMEM = "End";
+const char textHint[] PROGMEM = "Hint";
+/**
+ * @brief Displays the starting graphics
+ */
+void displayStartScreen()
+{
+  matrix.setCursor(0, textY--);
+  matrix.setTextColor(PLAYER_COLOR);
+  matrix.println(textPlayer);
+  matrix.setTextColor(NEAR_WALL_COLOR);
+  matrix.println(textWall);
+  matrix.setTextColor(NEAR_START_COLOR);
+  matrix.println(textStart);
+  matrix.setTextColor(NEAR_FINISH_COLOR);
+  matrix.println(textFinish);
+  matrix.setTextColor(NEAR_SOLUTION_COLOR);
+  matrix.println(textHint);
+}
+
 
 // ########## GRAPH CODE ##########
 
@@ -983,6 +1043,8 @@ void useHint()
   if (--hints <= HINTS)
     lastHintTime = currentTime;
 }
+
+// ########## END CODE ##########
 
 int16_t textMin = (int16_t)sizeof(congrats) * -6;
 /**
