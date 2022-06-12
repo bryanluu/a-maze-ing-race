@@ -122,7 +122,7 @@ void readInput(bool strobe = true);
 #define MEDIUM_SIZE 10
 #define LARGE_SIZE 15
 #define LOW_VISIBILITY 1 // in pixels (1 means player can see up to 1 pixel away)
-#define MEDIUM_VISIBILITY 5
+#define MEDIUM_VISIBILITY 4
 #define HIGH_VISIBILITY 10
 #define OPTIONS 3
 
@@ -176,6 +176,7 @@ class SettingsScene : public Scene
     static const char left[] PROGMEM;
     static const char right[] PROGMEM;
     Direction lastInputDir = None;
+    bool lastButtonState = false;
     enum Setting : int
     {
       SizeSetting,
@@ -355,13 +356,14 @@ void SettingsScene::start()
   inputDir = None;
   lastInputDir = None;
   buttonPressed = false;
+  lastButtonState = false;
   currentSetting = Setting::SizeSetting;
 }
 
 void SettingsScene::run()
 {
   Scene::run();
-  if (buttonPressed)
+  if (buttonPressed && !lastButtonState)
   {
     updateSetting();
     if (currentSetting == Setting::Settings)
@@ -370,6 +372,7 @@ void SettingsScene::run()
       return;
     }
   }
+  lastButtonState = buttonPressed;
 
   readInput(false);
   if (inputDir != lastInputDir || currentTime - lastInputTime >= DEFAULT_INPUT_FREQUENCY)
