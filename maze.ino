@@ -561,6 +561,7 @@ void calculateSolution()
 void displayMaze()
 {
   uint16_t color;
+  byte rowOffset, colOffset; // used for centering
   for (byte r = 0; r < MATRIX(mazeHeight); r++)
   {
     for (byte c = 0; c < MATRIX(mazeWidth); c++)
@@ -569,7 +570,9 @@ void displayMaze()
         color = grid[r][c]; // show seen pixels
       else
         color = BLACK; // shroud maze sections that haven't been seen
-      matrix.drawPixel(c, r, color);
+      rowOffset = (MATRIX_HEIGHT - MATRIX(mazeHeight))/2;
+      colOffset = (MATRIX_WIDTH - MATRIX(mazeWidth))/2;
+      matrix.drawPixel(c + colOffset, r + rowOffset, color);
     }
   }
 }
