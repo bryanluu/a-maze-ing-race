@@ -297,6 +297,7 @@ class MazeScene : public Scene
     void colorPlayer();
     void brightenSurroundings();
     bool playerHasFinished();
+    bool isBorder(byte r, byte c);
     void displayMaze();
 
   public:
@@ -936,7 +937,7 @@ void MazeScene::displayMaze()
   {
     for (byte c = 0; c < MATRIX(mazeWidth); c++)
     {
-      if (!SHROUD || settingsScene.shroud == SettingsScene::Shroud::Off || seen[r][c] || grid[r][c] == SEEN_FINISH_COLOR)
+      if (!SHROUD || settingsScene.shroud == SettingsScene::Shroud::Off || isBorder(r, c) || seen[r][c] || grid[r][c] == SEEN_FINISH_COLOR)
         color = grid[r][c]; // show seen pixels
       else
         color = BLACK; // shroud maze sections that haven't been seen
@@ -945,6 +946,19 @@ void MazeScene::displayMaze()
       matrix.drawPixel(c + colOffset, r + rowOffset, color);
     }
   }
+}
+
+/**
+ * @brief Whether the pixel is part of the border
+ * 
+ * @param r 
+ * @param c 
+ * @return true 
+ * @return false 
+ */
+bool MazeScene::isBorder(byte r, byte c)
+{
+  return r == 0 || r == MATRIX(mazeHeight) - 1 || c == 0 || c == MATRIX(mazeWidth) - 1;
 }
 
 /**
