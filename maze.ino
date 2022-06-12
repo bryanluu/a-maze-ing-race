@@ -171,6 +171,7 @@ class SettingsScene : public Scene
     static const char *sizeText[] PROGMEM;
     static const char left[] PROGMEM;
     static const char right[] PROGMEM;
+    Direction lastInputDir = None;
 
     void displaySettings();
 
@@ -340,7 +341,7 @@ void SettingsScene::run()
   }
 
   readInput(false);
-  if (currentTime - lastInputTime >= DEFAULT_INPUT_FREQUENCY)
+  if (inputDir != lastInputDir || currentTime - lastInputTime >= DEFAULT_INPUT_FREQUENCY)
   {
     if (inputDir == Left)
     {
@@ -350,6 +351,7 @@ void SettingsScene::run()
       choice = (Size) min(((int) choice) + 1, Sizes - 1);
     }
     lastInputTime = currentTime;
+    lastInputDir = inputDir;
   }
   displaySettings();
 }
