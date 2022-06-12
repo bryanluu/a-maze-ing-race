@@ -43,8 +43,7 @@ RGBmatrixPanel matrix(A, B, C, D, CLK, LAT, OE, true);
 #define MAZE(p) (((p) - 1)/2) // conversion from matrix coordinates to maze coordinates
 #define MATRIX(p) (2*(p) + 1) // conversion from maze coordinates to matrix coordinates
 #define MATRIX_INTERPOLATE(p, q) ((p) + (q) + 1) // interpolate between maze coordinates in matrix space
-#define VISIBILITY 1 // in pixels (1 means player can see up to 1 pixel away)
-#define SHROUD true // control whether the unseen portions of the maze are shrouded
+#define SHROUD true // control whether the unseen portions of the maze are shrouded (for debug purposes)
 
 // maze dimensions
 byte mazeWidth = 5;
@@ -122,6 +121,10 @@ void readInput(bool strobe = true);
 #define SMALL_SIZE 5
 #define MEDIUM_SIZE 10
 #define LARGE_SIZE 15
+#define LOW_VISIBILITY 1 // in pixels (1 means player can see up to 1 pixel away)
+#define MEDIUM_VISIBILITY 5
+#define HIGH_VISIBILITY 10
+#define OPTIONS 3
 
 // Start Scene config
 #define START_DURATION 5000 // in ms
@@ -169,21 +172,40 @@ class SettingsScene : public Scene
 {
   private:
     static const char *sizeText[] PROGMEM;
+    static const char *visibilityText[] PROGMEM;
     static const char left[] PROGMEM;
     static const char right[] PROGMEM;
     Direction lastInputDir = None;
+    enum Setting : int
+    {
+      SizeSetting,
+      VizSetting,
+      Settings
+    };
+    Setting currentSetting = SizeSetting;
+    static const char **settingsText[] PROGMEM;
+    byte choice = 2;
 
+    void updateSetting();
     void displaySettings();
 
   public:
-    enum Size : int
+    enum class Size : int
     {
+      Label,
       Small,
       Medium,
-      Large,
-      Sizes
+      Large
     };
-    Size choice;
+    Size size = Size::Medium; // control the size of the maze
+    enum class Visibility : int
+    {
+      Label,
+      Low,
+      Medium,
+      High
+    };
+    Visibility visibility = Visibility::Medium; // control whether the unseen portions of the maze are shrouded
 
     SettingsScene() : Scene()
     {
@@ -193,9 +215,11 @@ class SettingsScene : public Scene
     void start();
     void run();
 };
-const char *SettingsScene::sizeText[] PROGMEM = {"S", "M", "L"};
+const char *SettingsScene::sizeText[] PROGMEM = {"Size", "S", "M", "L"};
+const char *SettingsScene::visibilityText[] PROGMEM = {"Viz", "L", "M", "H"};
 const char SettingsScene::left[] PROGMEM = "<";
 const char SettingsScene::right[] PROGMEM = ">";
+const char **SettingsScene::settingsText[] PROGMEM = {SettingsScene::sizeText, SettingsScene::visibilityText};
 SettingsScene settingsScene = SettingsScene();
 
 class StartScene : public Scene
@@ -239,6 +263,7 @@ class MazeScene : public Scene
     node * startNode;
     node * endNode;
     byte playerX, playerY;
+    int visibility;
 
     void resetMaze();
     void buildAdjacencyGraph();
@@ -327,8 +352,10 @@ void loop()
 void SettingsScene::start()
 {
   Scene::start();
-  choice = Medium;
+  inputDir = None;
+  lastInputDir = None;
   buttonPressed = false;
+  currentSetting = Setting::SizeSetting;
 }
 
 void SettingsScene::run()
@@ -336,8 +363,12 @@ void SettingsScene::run()
   Scene::run();
   if (buttonPressed)
   {
-    startScene.start();
-    return;
+    updateSetting();
+    if (currentSetting == Setting::Settings)
+    {
+      startScene.start();
+      return;
+    }
   }
 
   readInput(false);
@@ -345,15 +376,29 @@ void SettingsScene::run()
   {
     if (inputDir == Left)
     {
-      choice = (Size) max(((int) choice) - 1, 0);
+      choice = constrain(choice - 1, 1, OPTIONS);
     } else if (inputDir == Right)
     {
-      choice = (Size) min(((int) choice) + 1, Sizes - 1);
+      choice = constrain(choice + 1, 1, OPTIONS);
     }
     lastInputTime = currentTime;
     lastInputDir = inputDir;
   }
   displaySettings();
+}
+
+void SettingsScene::updateSetting()
+{
+  switch (currentSetting)
+  {
+  case SizeSetting:
+    size = (Size) choice;
+    break;
+  case VizSetting:
+    visibility = (Visibility) choice;
+    break;
+  }
+  currentSetting = (Setting) (currentSetting + 1);
 }
 
 /**
@@ -364,20 +409,20 @@ void SettingsScene::displaySettings()
 {
   matrix.setCursor(2, 5);
   matrix.setTextColor(SETTINGS_COLOR);
-  matrix.println("Size:");
+  matrix.println(settingsText[currentSetting][0]);
   matrix.setCursor(1, 18);
   if (inputDir == Left)
     matrix.setTextColor(SETTINGS_SELECTED_TEXT_COLOR);
   else
     matrix.setTextColor(SETTINGS_UNSELECTED_TEXT_COLOR);
   matrix.print(left);
-  for (byte i = 0; i < Sizes; i++)
+  for (byte i = 1; i <= OPTIONS; i++)
   {
     if (i == choice)
       matrix.setTextColor(SETTINGS_SELECTED_TEXT_COLOR);
     else
       matrix.setTextColor(SETTINGS_UNSELECTED_TEXT_COLOR);
-    matrix.print(sizeText[i]);
+    matrix.print(settingsText[currentSetting][i]);
   }
   if (inputDir == Right)
     matrix.setTextColor(SETTINGS_SELECTED_TEXT_COLOR);
@@ -432,6 +477,21 @@ void MazeScene::start()
   buttonPressed = false;
   hints = HINTS;
   lastHintTime = -HINT_DURATION;
+  switch (settingsScene.visibility)
+  {
+  case SettingsScene::Visibility::Low:
+    visibility = LOW_VISIBILITY;
+    break;
+  case SettingsScene::Visibility::Medium:
+    visibility = MEDIUM_VISIBILITY;
+    break;
+  case SettingsScene::Visibility::High:
+    visibility = HIGH_VISIBILITY;
+    break;
+  default:
+    visibility = 0;
+    break;
+  }
 }
 
 void MazeScene::run()
@@ -701,15 +761,15 @@ void MazeScene::buildMaze()
 {
   byte size;
 
-  switch(settingsScene.choice)
+  switch(settingsScene.size)
   {
-    case SettingsScene::Small:
+    case SettingsScene::Size::Small:
       size = SMALL_SIZE;
       break;
-    case SettingsScene::Medium:
+    case SettingsScene::Size::Medium:
       size = MEDIUM_SIZE;
       break;
-    case SettingsScene::Large:
+    case SettingsScene::Size::Large:
       size = LARGE_SIZE;
       break;
     default:
@@ -844,7 +904,7 @@ void MazeScene::displayMaze()
   {
     for (byte c = 0; c < MATRIX(mazeWidth); c++)
     {
-      if (!SHROUD || seen[r][c] || grid[r][c] == SEEN_FINISH_COLOR)
+      if (!SHROUD || settingsScene.visibility >= SettingsScene::Visibility::High || seen[r][c] || grid[r][c] == SEEN_FINISH_COLOR)
         color = grid[r][c]; // show seen pixels
       else
         color = BLACK; // shroud maze sections that haven't been seen
@@ -865,7 +925,7 @@ void MazeScene::displayMaze()
  */
 bool MazeScene::isNearPlayer(byte x, byte y)
 {
-  return (abs(x - playerX) <= VISIBILITY) && (abs(y - playerY) <= VISIBILITY);
+  return (abs(x - playerX) <= visibility) && (abs(y - playerY) <= visibility);
 }
 
 /**
@@ -1001,9 +1061,9 @@ void MazeScene::colorSolution()
  */
 void MazeScene::brightenSurroundings()
 {
-  for (short x = playerX - VISIBILITY; x <= playerX + VISIBILITY; x++)
+  for (short x = playerX - visibility; x <= playerX + visibility; x++)
   {
-    for (short y = playerY - VISIBILITY; y <= playerY + VISIBILITY; y++)
+    for (short y = playerY - visibility; y <= playerY + visibility; y++)
     {
       if (!isNearPlayer(x, y))
         continue;
