@@ -73,6 +73,9 @@ byte mazeHeight = 5;
 #define SEEN_SOLUTION_COLOR (matrix.ColorHSV(H_YELLOW, 255, SEEN_BRIGHTNESS, true))
 #define NEAR_SOLUTION_COLOR (matrix.ColorHSV(H_YELLOW, 255, NEAR_BRIGHTNESS, true))
 #define PLAYER_COLOR (WHITE(NEAR_BRIGHTNESS))
+#define SETTINGS_COLOR (matrix.ColorHSV(H_BLUE, 255, 100, true))
+#define SETTINGS_UNSELECTED_TEXT_COLOR (matrix.ColorHSV(H_YELLOW, 255, 100, true))
+#define SETTINGS_SELECTED_TEXT_COLOR WHITE(255)
 
 typedef byte coord; // used for position or direction
 struct node; // define a node struct for later
@@ -111,6 +114,13 @@ enum Direction : int
 #define DEFAULT_INPUT_FREQUENCY 500 // default input frequency
 #define FAST_INPUT_FREQUENCY 300 // input frequency at full speed
 #define FAST_INPUT_THRESHOLD 100 // how close to max/min should the input be considered fast
+
+void readInput();
+
+// Settings config
+#define SMALL_SIZE 5
+#define MEDIUM_SIZE 10
+#define LARGE_SIZE 15
 
 // Start Scene config
 #define START_DURATION 5000 // in ms
@@ -153,6 +163,38 @@ class Scene
     }
 };
 Scene * Scene::currentScene = nullptr;
+
+class SettingsScene : public Scene
+{
+  private:
+    static const char *sizeText[] PROGMEM;
+    static const char left[] PROGMEM;
+    static const char right[] PROGMEM;
+
+    void displaySettings();
+
+  public:
+    enum Size : int
+    {
+      Small,
+      Medium,
+      Large,
+      Sizes
+    };
+    Size choice;
+
+    SettingsScene() : Scene()
+    {
+      name = "Settings";
+    }
+
+    void start();
+    void run();
+};
+const char *SettingsScene::sizeText[] PROGMEM = {"S", "M", "L"};
+const char SettingsScene::left[] PROGMEM = "<";
+const char SettingsScene::right[] PROGMEM = ">";
+SettingsScene settingsScene = SettingsScene();
 
 class StartScene : public Scene
 {
@@ -255,7 +297,7 @@ void setup()
   matrix.begin();
   matrix.setTextWrap(false);
   matrix.setTextSize(1);
-  startScene.start();
+  settingsScene.start();
 }
 
 Direction inputDir = None; // variable to hold direction input state
@@ -276,6 +318,33 @@ void loop()
 
   // Update display
   matrix.swapBuffers(false);
+}
+
+void SettingsScene::start()
+{
+  Scene::start();
+  choice = Medium;
+  buttonPressed = false;
+}
+
+void SettingsScene::run()
+{
+  Scene::run();
+  if (buttonPressed)
+  {
+    startScene.start();
+    return;
+  }
+
+  readInput();
+  if (inputDir == Left)
+  {
+    choice = (Size) max(((int) choice) - 1, 0);
+  } else if (inputDir == Right)
+  {
+    choice = (Size) min(((int) choice) + 1, Sizes - 1);
+  }
+  displaySettings();
 }
 
 void StartScene::start()
@@ -339,8 +408,40 @@ void EndScene::run()
   Scene::run();
   bool finished = displayFinishScreen();
   if (finished)
-    startScene.start();
+    settingsScene.start();
   Serial.println(finished);
+}
+
+// ########## SETTINGS CODE ##########
+
+/**
+ * @brief Displays the settings
+ * 
+ */
+void SettingsScene::displaySettings()
+{
+  matrix.setCursor(2, 5);
+  matrix.setTextColor(SETTINGS_COLOR);
+  matrix.println("Size:");
+  matrix.setCursor(1, 18);
+  if (inputDir == Left)
+    matrix.setTextColor(SETTINGS_SELECTED_TEXT_COLOR);
+  else
+    matrix.setTextColor(SETTINGS_UNSELECTED_TEXT_COLOR);
+  matrix.print(left);
+  for (byte i = 0; i < Sizes; i++)
+  {
+    if (i == choice)
+      matrix.setTextColor(SETTINGS_SELECTED_TEXT_COLOR);
+    else
+      matrix.setTextColor(SETTINGS_UNSELECTED_TEXT_COLOR);
+    matrix.print(sizeText[i]);
+  }
+  if (inputDir == Right)
+    matrix.setTextColor(SETTINGS_SELECTED_TEXT_COLOR);
+  else
+    matrix.setTextColor(SETTINGS_UNSELECTED_TEXT_COLOR);
+  matrix.print(right);
 }
 
 // ########## START CODE ##########
@@ -363,8 +464,7 @@ void StartScene::displayStartScreen()
   matrix.println(textHint);
 }
 
-
-// ########## GRAPH CODE ##########
+// ########## MAZE CODE ##########
 
 // encodes the position given x and y
 #define ENCODE(x, y) ((x) + (mazeWidth) * (y))
@@ -608,6 +708,26 @@ void MazeScene::setMazeEndpoints()
  */
 void MazeScene::buildMaze()
 {
+  byte size;
+
+  switch(settingsScene.choice)
+  {
+    case SettingsScene::Small:
+      size = SMALL_SIZE;
+      break;
+    case SettingsScene::Medium:
+      size = MEDIUM_SIZE;
+      break;
+    case SettingsScene::Large:
+      size = LARGE_SIZE;
+      break;
+    default:
+      return;
+  }
+
+  mazeWidth = size;
+  mazeHeight = size;
+
   adj_g = new graph(mazeWidth, mazeHeight);
   maze_g = new graph(mazeWidth, mazeHeight);
 
