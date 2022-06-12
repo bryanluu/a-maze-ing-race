@@ -354,73 +354,6 @@ void SettingsScene::run()
   displaySettings();
 }
 
-void StartScene::start()
-{
-  Scene::start();
-  startTime = currentTime;
-  textY = 5;
-}
-
-void StartScene::run()
-{
-  Scene::run();
-  if (currentTime - startTime >= START_DURATION)
-    mazeScene.start();
-  displayStartScreen();
-  delay(START_DELAY);
-}
-
-void MazeScene::start()
-{
-  Scene::start();
-  resetMaze();
-  inputDir = None;
-  buttonPressed = false;
-  hints = HINTS;
-  lastHintTime = -HINT_DURATION;
-}
-
-void MazeScene::run()
-{
-  if (playerHasFinished())
-    endScene.start();
-
-  Scene::run();
-  readInput();
-  movePlayer();
-  if (buttonPressed)
-    {
-      calculateSolution();
-      useHint();
-    }
-
-    colorMaze();
-    colorStart();
-    if (currentTime - lastHintTime < HINT_DURATION)
-      colorSolution();
-    colorFinish();
-  colorPlayer();
-  displayMaze();
-}
-
-void EndScene::start()
-{
-  Scene::start();
-  textX = matrix.width();
-  hue = 0;
-}
-
-void EndScene::run()
-{
-  Scene::run();
-  bool finished = displayFinishScreen();
-  if (finished)
-    settingsScene.start();
-  Serial.println(finished);
-}
-
-// ########## SETTINGS CODE ##########
-
 /**
  * @brief Displays the settings
  * 
@@ -453,6 +386,22 @@ void SettingsScene::displaySettings()
 
 // ########## START CODE ##########
 
+void StartScene::start()
+{
+  Scene::start();
+  startTime = currentTime;
+  textY = 5;
+}
+
+void StartScene::run()
+{
+  Scene::run();
+  if (currentTime - startTime >= START_DURATION)
+    mazeScene.start();
+  displayStartScreen();
+  delay(START_DELAY);
+}
+
 /**
  * @brief Displays the starting graphics
  */
@@ -472,6 +421,39 @@ void StartScene::displayStartScreen()
 }
 
 // ########## MAZE CODE ##########
+
+void MazeScene::start()
+{
+  Scene::start();
+  resetMaze();
+  inputDir = None;
+  buttonPressed = false;
+  hints = HINTS;
+  lastHintTime = -HINT_DURATION;
+}
+
+void MazeScene::run()
+{
+  if (playerHasFinished())
+    endScene.start();
+
+  Scene::run();
+  readInput();
+  movePlayer();
+  if (buttonPressed)
+  {
+    calculateSolution();
+    useHint();
+  }
+
+  colorMaze();
+  colorStart();
+  if (currentTime - lastHintTime < HINT_DURATION)
+    colorSolution();
+  colorFinish();
+  colorPlayer();
+  displayMaze();
+}
 
 // encodes the position given x and y
 #define ENCODE(x, y) ((x) + (mazeWidth) * (y))
@@ -1196,6 +1178,22 @@ void MazeScene::useHint()
 }
 
 // ########## END CODE ##########
+
+void EndScene::start()
+{
+  Scene::start();
+  textX = matrix.width();
+  hue = 0;
+}
+
+void EndScene::run()
+{
+  Scene::run();
+  bool finished = displayFinishScreen();
+  if (finished)
+    settingsScene.start();
+  Serial.println(finished);
+}
 
 /**
  * @brief Displays the finishing graphics
