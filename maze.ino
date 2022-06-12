@@ -336,7 +336,7 @@ EndScene endScene = EndScene();
 void setup()
 {
   Serial.begin(9600);
-  randomSeed(12);
+  randomSeed(analogRead(0));
   pinMode(0, INPUT_PULLUP);
   matrix.begin();
   matrix.setTextWrap(false);
