@@ -1136,7 +1136,7 @@ void MazeScene::brightenSurroundings()
       else if (color == SEEN_FINISH_COLOR)
         color = NEAR_FINISH_COLOR;
       else if (color == SEEN_SOLUTION_COLOR)
-        color = NEAR_SOLUTION_COLOR;
+        color = SEEN_SOLUTION_COLOR;
       grid[y][x] = color; // update color
       seen[y][x] = true; // mark pixel as seen
     }
