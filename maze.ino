@@ -1193,8 +1193,7 @@ void readInput(bool strobe)
     inputDir = None;
   if (abs(dx) > INPUT_BUFFER || abs(dy) > INPUT_BUFFER)
   {
-    // only trigger if only one direction is input
-    if (abs(dx) <= INPUT_BUFFER || abs(dy) <= INPUT_BUFFER) 
+    if (abs(dx) >= abs(dy)) 
     {
       if (dx > INPUT_BUFFER)
       {
@@ -1210,6 +1209,8 @@ void readInput(bool strobe)
         if (currentTime - lastInputTime > inputFrequency)
           inputDir = opposite(HORIZONTAL_INCREASING);
       }
+    } else
+    {
       if (dy > INPUT_BUFFER)
       {
         if (abs(vertical - INPUT_MAX) < FAST_INPUT_THRESHOLD)
