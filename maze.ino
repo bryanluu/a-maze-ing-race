@@ -288,6 +288,7 @@ class MazeScene : public Scene
     coord approximatePlayerLocation();
     void calculateSolution();
     bool isNearPlayer(byte x, byte y);
+    bool isOnMaze(byte x, byte y);
     void movePlayer();
     void useHint();
     void colorMaze();
@@ -975,6 +976,19 @@ bool MazeScene::isNearPlayer(byte x, byte y)
 }
 
 /**
+ * @brief Check whether given pixel is on maze
+ * 
+ * @param x horizontal coord
+ * @param y vertical coord
+ * @return true if on maze
+ * @return false otherwise
+ */
+bool MazeScene::isOnMaze(byte x, byte y)
+{
+  return (x >= 0) && (x < MATRIX(mazeWidth)) && (y >= 0) && (y < MATRIX(mazeHeight));
+}
+
+/**
  * @brief Colors the start of the maze
  * 
  */
@@ -1111,7 +1125,7 @@ void MazeScene::brightenSurroundings()
   {
     for (short y = playerY - visibility; y <= playerY + visibility; y++)
     {
-      if (!isNearPlayer(x, y))
+      if (!isOnMaze(x, y) || !isNearPlayer(x, y))
         continue;
 
       uint16_t color = grid[y][x];
