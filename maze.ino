@@ -171,6 +171,7 @@ Scene * Scene::currentScene = nullptr;
 class SettingsScene : public Scene
 {
   private:
+    static const char *modeText[] PROGMEM;
     static const char *sizeText[] PROGMEM;
     static const char *shroudText[] PROGMEM;
     static const char *visibilityText[] PROGMEM;
@@ -180,22 +181,30 @@ class SettingsScene : public Scene
     bool lastButtonState = false;
     enum Setting : int
     {
+      GameModeSetting,
       SizeSetting,
       ShroudSetting,
       VizSetting,
       Settings
     };
-    Setting currentSetting = SizeSetting;
+    Setting currentSetting = GameModeSetting;
     static const char **settingsText[] PROGMEM;
     static const int options[];
     static const int defaults[];
-    byte choice = 2;
+    byte choice = 1;
     bool firstTime = true;
 
     void updateSetting();
     void displaySettings();
 
   public:
+    enum class GameMode : int
+    {
+      Label,
+      Game,
+      Custom
+    };
+    GameMode mode; // mode of the maze game
     enum class Size : int
     {
       Label,
@@ -228,14 +237,15 @@ class SettingsScene : public Scene
     void start();
     void run();
 };
+const char *SettingsScene::modeText[] PROGMEM = {"Mode", "Game\n", "Cstm"};
 const char *SettingsScene::sizeText[] PROGMEM = {"Size", "S", "M", "L"};
 const char *SettingsScene::shroudText[] PROGMEM = {"Shrd?", "Y", "N"};
 const char *SettingsScene::visibilityText[] PROGMEM = {"Viz", "L", "M", "H"};
 const char SettingsScene::left[] PROGMEM = "<";
 const char SettingsScene::right[] PROGMEM = ">";
-const int SettingsScene::options[] = {3, 2, 3};
-const int SettingsScene::defaults[] = {2, 1, 2};
-const char **SettingsScene::settingsText[] PROGMEM = {SettingsScene::sizeText, SettingsScene::shroudText, SettingsScene::visibilityText};
+const int SettingsScene::options[] = {2, 3, 2, 3};
+const int SettingsScene::defaults[] = {1, 2, 1, 2};
+const char **SettingsScene::settingsText[] PROGMEM = {SettingsScene::modeText, SettingsScene::sizeText, SettingsScene::shroudText, SettingsScene::visibilityText};
 SettingsScene settingsScene = SettingsScene();
 
 class StartScene : public Scene
@@ -374,11 +384,11 @@ void SettingsScene::start()
   lastInputDir = None;
   buttonPressed = false;
   lastButtonState = false;
-  currentSetting = Setting::SizeSetting;
+  currentSetting = Setting::GameModeSetting;
   if (firstTime)
     choice = defaults[currentSetting];
   else
-    choice = (int) size;
+    choice = (int) mode;
 }
 
 void SettingsScene::run()
@@ -416,6 +426,11 @@ void SettingsScene::updateSetting()
 {
   switch (currentSetting)
   {
+  case GameModeSetting:
+    mode = (GameMode) choice;
+    if (!firstTime)
+      choice = (int) size;
+    break;
   case SizeSetting:
     size = (Size) choice;
     if (!firstTime)
@@ -441,10 +456,10 @@ void SettingsScene::updateSetting()
  */
 void SettingsScene::displaySettings()
 {
-  matrix.setCursor(2, 5);
+  matrix.setCursor(2, 2);
   matrix.setTextColor(SETTINGS_COLOR);
   matrix.println(settingsText[currentSetting][0]);
-  matrix.setCursor(1, 18);
+  matrix.setCursor(1, 12);
   if (inputDir == Left)
     matrix.setTextColor(SETTINGS_SELECTED_TEXT_COLOR);
   else
