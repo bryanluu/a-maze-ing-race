@@ -428,6 +428,14 @@ void SettingsScene::updateSetting()
   {
   case GameModeSetting:
     mode = (GameMode) choice;
+    if (mode == GameMode::Game)
+    {
+      size = Size::Large;
+      shroud = Shroud::On;
+      visibility = Visibility::Low;
+      currentSetting = Setting::Settings;
+      return;
+    }
     if (!firstTime)
       choice = (int) size;
     break;
