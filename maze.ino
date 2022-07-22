@@ -110,8 +110,8 @@ enum Direction : int
 #define VERTICAL_INCREASING Down // direction in which the signal increases vertically
 #define INPUT_MAX 1023 // max input value
 #define INPUT_MIN 0 // min input value
-#define DEFAULT_INPUT_FREQUENCY 500 // default input frequency
-#define FAST_INPUT_FREQUENCY 300 // input frequency at full speed
+#define DEFAULT_INPUT_DELAY 500 // default input delay
+#define FAST_INPUT_DELAY 300 // input delay at full speed
 #define FAST_INPUT_THRESHOLD 100 // how close to max/min should the input be considered fast
 
 unsigned long lastInputTime = 0; // keeps track of last input of joystick
@@ -407,7 +407,7 @@ void SettingsScene::run()
   lastButtonState = buttonPressed;
 
   readInput(false);
-  if (inputDir != lastInputDir || currentTime - lastInputTime >= DEFAULT_INPUT_FREQUENCY)
+  if (inputDir != lastInputDir || currentTime - lastInputTime >= DEFAULT_INPUT_DELAY)
   {
     if (inputDir == Left)
     {
@@ -1203,7 +1203,7 @@ void readInput(bool strobe)
 
   int dx = horizontal - CENTERPOINT;
   int dy = vertical - CENTERPOINT;
-  int inputFrequency = DEFAULT_INPUT_FREQUENCY;
+  int inputDelay = DEFAULT_INPUT_DELAY;
   if (strobe)
     inputDir = None;
   if (abs(dx) > INPUT_BUFFER || abs(dy) > INPUT_BUFFER)
@@ -1213,15 +1213,15 @@ void readInput(bool strobe)
       if (dx > INPUT_BUFFER)
       {
         if (abs(horizontal - INPUT_MAX) < FAST_INPUT_THRESHOLD)
-          inputFrequency = FAST_INPUT_FREQUENCY;
-        if (currentTime - lastInputTime > inputFrequency)
+          inputDelay = FAST_INPUT_DELAY;
+        if (currentTime - lastInputTime > inputDelay)
           inputDir = HORIZONTAL_INCREASING;
       }
       else if (dx < -INPUT_BUFFER)
       {
         if (abs(horizontal - INPUT_MIN) < FAST_INPUT_THRESHOLD)
-          inputFrequency = FAST_INPUT_FREQUENCY;
-        if (currentTime - lastInputTime > inputFrequency)
+          inputDelay = FAST_INPUT_DELAY;
+        if (currentTime - lastInputTime > inputDelay)
           inputDir = opposite(HORIZONTAL_INCREASING);
       }
     } else
@@ -1229,15 +1229,15 @@ void readInput(bool strobe)
       if (dy > INPUT_BUFFER)
       {
         if (abs(vertical - INPUT_MAX) < FAST_INPUT_THRESHOLD)
-          inputFrequency = FAST_INPUT_FREQUENCY;
-        if (currentTime - lastInputTime > inputFrequency)
+          inputDelay = FAST_INPUT_DELAY;
+        if (currentTime - lastInputTime > inputDelay)
           inputDir = VERTICAL_INCREASING;
       }
       else if (dy < -INPUT_BUFFER)
       {
         if (abs(vertical - INPUT_MIN) < FAST_INPUT_THRESHOLD)
-          inputFrequency = FAST_INPUT_FREQUENCY;
-        if (currentTime - lastInputTime > inputFrequency)
+          inputDelay = FAST_INPUT_DELAY;
+        if (currentTime - lastInputTime > inputDelay)
           inputDir = opposite(VERTICAL_INCREASING);
       }
     }
