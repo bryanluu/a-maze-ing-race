@@ -244,7 +244,7 @@ const char *SettingsScene::visibilityText[] PROGMEM = {"Viz", "L", "M", "H"};
 const char SettingsScene::left[] PROGMEM = "<";
 const char SettingsScene::right[] PROGMEM = ">";
 const int SettingsScene::options[] = {2, 3, 2, 3};
-const int SettingsScene::defaults[] = {1, 2, 1, 2};
+const int SettingsScene::defaults[] = {1, 3, 1, 1};
 const char **SettingsScene::settingsText[] PROGMEM = {SettingsScene::modeText, SettingsScene::sizeText, SettingsScene::shroudText, SettingsScene::visibilityText};
 SettingsScene settingsScene = SettingsScene();
 
