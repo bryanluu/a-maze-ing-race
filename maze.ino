@@ -116,9 +116,9 @@ enum Direction : int
 #define VERTICAL_INCREASING Down // direction in which the signal increases vertically
 #define INPUT_MAX 1023 // max input value
 #define INPUT_MIN 0 // min input value
-#define DEFAULT_INPUT_DELAY 500 // default input delay
-#define FAST_INPUT_DELAY 300 // input delay at full speed
-#define FAST_INPUT_THRESHOLD 100 // how close to max/min should the input be considered fast
+#define DEFAULT_INPUT_DELAY 400 // default input delay
+#define FAST_INPUT_DELAY 100 // input delay at full speed
+#define FAST_INPUT_THRESHOLD 10 // how close to max/min should the input be considered fast
 
 unsigned long lastInputTime = 0; // keeps track of last input of joystick
 void readInput(bool strobe = true);
