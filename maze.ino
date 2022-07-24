@@ -52,29 +52,29 @@ byte mazeHeight = 5;
 // colors
 #define HUE(deg) ((long) (1536 * ((deg)/360.0))) // conversion to hue value from angle
 #define SEEN_BRIGHTNESS 100
-#define NEAR_BRIGHTNESS 255
-#define BLACK (matrix.Color333(0, 0, 0))
-#define WHITE(b) (matrix.ColorHSV(0, 0, b, true)) // white at a given brightness
+#define NEAR_BRIGHTNESS 150
 #define COLOR 255
 #define SHADE 0
+#define BLACK (matrix.Color333(0, 0, 0))
+#define WHITE(b) (matrix.ColorHSV(0, SHADE, b, true)) // white at a given brightness
 #define H_RED (HUE(0)) // red hue value
 #define H_GREEN (HUE(120)) // green hue value
 #define H_BLUE (HUE(240)) // blue hue value
 #define H_YELLOW (HUE(60)) // yellow hue value
-#define SEEN_WALL_COLOR (matrix.ColorHSV(H_RED, 255, SEEN_BRIGHTNESS, true))
-#define NEAR_WALL_COLOR (matrix.ColorHSV(H_RED, 255, NEAR_BRIGHTNESS, true))
+#define SEEN_WALL_COLOR (matrix.ColorHSV(H_RED, COLOR, SEEN_BRIGHTNESS, true))
+#define NEAR_WALL_COLOR (matrix.ColorHSV(H_RED, COLOR, NEAR_BRIGHTNESS, true))
 #define SEEN_MAZE_COLOR BLACK
 #define NEAR_MAZE_COLOR BLACK
-#define SEEN_START_COLOR (matrix.ColorHSV(H_BLUE, 255, SEEN_BRIGHTNESS, true))
-#define NEAR_START_COLOR (matrix.ColorHSV(H_BLUE, 255, NEAR_BRIGHTNESS, true))
-#define SEEN_FINISH_COLOR (matrix.ColorHSV(H_GREEN, 255, SEEN_BRIGHTNESS, true))
-#define NEAR_FINISH_COLOR (matrix.ColorHSV(H_GREEN, 255, NEAR_BRIGHTNESS, true))
-#define SEEN_SOLUTION_COLOR (matrix.ColorHSV(H_YELLOW, 255, SEEN_BRIGHTNESS, true))
-#define NEAR_SOLUTION_COLOR (matrix.ColorHSV(H_YELLOW, 255, NEAR_BRIGHTNESS, true))
+#define SEEN_START_COLOR (matrix.ColorHSV(H_BLUE, COLOR, SEEN_BRIGHTNESS, true))
+#define NEAR_START_COLOR (matrix.ColorHSV(H_BLUE, COLOR, NEAR_BRIGHTNESS, true))
+#define SEEN_FINISH_COLOR (matrix.ColorHSV(H_GREEN, COLOR, SEEN_BRIGHTNESS, true))
+#define NEAR_FINISH_COLOR (matrix.ColorHSV(H_GREEN, COLOR, NEAR_BRIGHTNESS, true))
+#define SEEN_SOLUTION_COLOR (matrix.ColorHSV(H_YELLOW, COLOR, SEEN_BRIGHTNESS, true))
+#define NEAR_SOLUTION_COLOR (matrix.ColorHSV(H_YELLOW, COLOR, NEAR_BRIGHTNESS, true))
 #define PLAYER_COLOR (WHITE(NEAR_BRIGHTNESS))
-#define SETTINGS_COLOR (matrix.ColorHSV(H_BLUE, 255, 100, true))
-#define SETTINGS_UNSELECTED_TEXT_COLOR (matrix.ColorHSV(H_YELLOW, 255, 100, true))
-#define SETTINGS_SELECTED_TEXT_COLOR WHITE(255)
+#define SETTINGS_COLOR (matrix.ColorHSV(H_BLUE, COLOR, 100, true))
+#define SETTINGS_UNSELECTED_TEXT_COLOR (matrix.ColorHSV(H_YELLOW, COLOR, SEEN_BRIGHTNESS, true))
+#define SETTINGS_SELECTED_TEXT_COLOR WHITE(NEAR_BRIGHTNESS)
 
 typedef byte coord; // used for position or direction
 struct node; // define a node struct for later
