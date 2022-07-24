@@ -245,7 +245,7 @@ class SettingsScene : public Scene
 };
 const char *SettingsScene::modeText[] PROGMEM = {"Mode", "Game\n", "Cstm"};
 const char *SettingsScene::sizeText[] PROGMEM = {"Size", "S", "M", "L"};
-const char *SettingsScene::shroudText[] PROGMEM = {"Shrd?", "Y", "N"};
+const char *SettingsScene::shroudText[] PROGMEM = {"Mist?", "Y", "N"};
 const char *SettingsScene::visibilityText[] PROGMEM = {"Viz", "L", "M", "H"};
 const char SettingsScene::left[] PROGMEM = "<";
 const char SettingsScene::right[] PROGMEM = ">";
