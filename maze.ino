@@ -61,6 +61,7 @@ byte mazeHeight = 5;
 #define H_GREEN (HUE(120)) // green hue value
 #define H_PURPLE (HUE(300)) // purple hue value
 #define H_BLUE (HUE(240)) // blue hue value
+#define H_CYAN (HUE(180)) // cyan hue value
 #define H_YELLOW (HUE(60)) // yellow hue value
 #define SEEN_WALL_COLOR (matrix.ColorHSV(H_RED, COLOR, SEEN_BRIGHTNESS, true))
 #define NEAR_WALL_COLOR (matrix.ColorHSV(H_RED, COLOR, NEAR_BRIGHTNESS, true))
@@ -74,6 +75,7 @@ byte mazeHeight = 5;
 #define NEAR_SOLUTION_COLOR (matrix.ColorHSV(H_YELLOW, COLOR, NEAR_BRIGHTNESS, true))
 #define PLAYER_COLOR (WHITE(NEAR_BRIGHTNESS))
 #define TIME_COLOR (matrix.ColorHSV(H_PURPLE, COLOR, NEAR_BRIGHTNESS, true))
+#define FOOD_COLOR (matrix.ColorHSV(H_CYAN, COLOR, NEAR_BRIGHTNESS, true))
 #define SETTINGS_COLOR (matrix.ColorHSV(H_BLUE, COLOR, 100, true))
 #define SETTINGS_UNSELECTED_TEXT_COLOR (matrix.ColorHSV(H_YELLOW, COLOR, SEEN_BRIGHTNESS, true))
 #define SETTINGS_SELECTED_TEXT_COLOR WHITE(NEAR_BRIGHTNESS)
@@ -262,6 +264,7 @@ class StartScene : public Scene
     static const char textWall[] PROGMEM;
     static const char textFinish[] PROGMEM;
     static const char textHint[] PROGMEM;
+    static const char textFood[] PROGMEM;
     static const char textTime[] PROGMEM;
     unsigned long startTime = 0;
     int16_t textY;
@@ -282,6 +285,7 @@ const char StartScene::textStart[] PROGMEM = "Start";
 const char StartScene::textWall[] PROGMEM = "Wall";
 const char StartScene::textFinish[] PROGMEM = "End";
 const char StartScene::textHint[] PROGMEM = "Hint";
+const char StartScene::textFood[] PROGMEM = "Food";
 const char StartScene::textTime[] PROGMEM = "Time";
 StartScene startScene = StartScene();
 
@@ -534,6 +538,8 @@ void StartScene::displayStartScreen()
   matrix.println(textHint);
   if (settingsScene.mode == SettingsScene::GameMode::Game)
   {
+    matrix.setTextColor(FOOD_COLOR);
+    matrix.println(textFood);
     matrix.setTextColor(TIME_COLOR);
     matrix.println(textTime);
   }
