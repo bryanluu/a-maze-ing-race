@@ -107,6 +107,7 @@ enum Direction : int
 // game parameters
 #define TIME_PIXELS (63)
 #define GAME_TIME (300 * 1000) // in ms
+#define SNACKS 10
 
 // input parameters
 #define HORIZONTAL_PIN A5
@@ -304,10 +305,14 @@ class MazeScene : public Scene
     byte playerX, playerY;
     int visibility;
 
+    typedef std::vector<node *> vertex_list;
+    vertex_list snacks; 
+
     void resetMaze();
     void buildAdjacencyGraph();
     void buildMaze();
     void setMazeEndpoints();
+    void placeSnacks();
     coord approximatePlayerLocation();
     void calculateSolution();
     bool isNearPlayer(byte x, byte y);
@@ -317,6 +322,7 @@ class MazeScene : public Scene
     void colorMaze();
     void colorStart();
     void colorFinish();
+    void displaySnacks();
     void colorSolution();
     void colorPlayer();
     void brightenSurroundings();
@@ -596,7 +602,10 @@ void MazeScene::run()
   colorPlayer();
   displayMaze();
   if (settingsScene.mode == SettingsScene::GameMode::Game)
+  {
+    displaySnacks();
     displayTime();
+  }
 }
 
 // encodes the position given x and y
@@ -699,8 +708,6 @@ struct node
 
 bool compare(node *u, node *v);
 
-typedef std::vector<node *> vertex_list;
-
 namespace std
 {
   template<>
@@ -774,6 +781,7 @@ void MazeScene::resetMaze()
 {
   delete adj_g;
   delete maze_g;
+  snacks.clear();
   buildMaze();
   for (byte r = 0; r < MATRIX_HEIGHT; r++)
   {
@@ -836,6 +844,23 @@ void MazeScene::setMazeEndpoints()
 }
 
 /**
+ * @brief Place snacks on available nodes
+ * 
+ */
+void MazeScene::placeSnacks()
+{
+  node * v;
+  for (byte i = 0; i < SNACKS; i++)
+  {
+    do {
+      v = &maze_g->vertices[random(maze_g->size)];
+    } while (v == startNode || v == endNode || v->used);
+    v->used = true;
+    snacks.push_back(v);
+  }
+}
+
+/**
  * @brief Builds the maze graph using Prim's algorithm
  * 
  */
@@ -872,6 +897,8 @@ void MazeScene::buildMaze()
     maze_g->vertices[p].pos = p;
 
   setMazeEndpoints();
+  if (settingsScene.mode == SettingsScene::GameMode::Game)
+    placeSnacks();
 
   // initialize the queue of vertices not in the maze
   std::priority_queue<node *, vertex_list, decltype(&compare)> pq(&compare);
@@ -1097,6 +1124,22 @@ void MazeScene::colorFinish()
   x = GET_X(endNode->pos);
   y = GET_Y(endNode->pos);
   grid[MATRIX(y)][MATRIX(x)] = SEEN_FINISH_COLOR;
+}
+
+/**
+ * @brief Colors the snacks in the maze
+ * 
+ */
+void MazeScene::displaySnacks()
+{
+  byte x, y, p;
+  for (auto it = snacks.begin(); it != snacks.end(); it++)
+  {
+    p = (*it)->pos;
+    x = GET_X(p);
+    y = GET_Y(p);
+    matrix.drawPixel(MATRIX(x), MATRIX(y), FOOD_COLOR);
+  }
 }
 
 /**
