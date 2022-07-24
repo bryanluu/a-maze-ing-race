@@ -532,8 +532,11 @@ void StartScene::displayStartScreen()
   matrix.println(textFinish);
   matrix.setTextColor(NEAR_SOLUTION_COLOR);
   matrix.println(textHint);
-  matrix.setTextColor(TIME_COLOR);
-  matrix.println(textTime);
+  if (settingsScene.mode == SettingsScene::GameMode::Game)
+  {
+    matrix.setTextColor(TIME_COLOR);
+    matrix.println(textTime);
+  }
 }
 
 // ########## MAZE CODE ##########
@@ -586,7 +589,8 @@ void MazeScene::run()
   colorFinish();
   colorPlayer();
   displayMaze();
-  displayTime();
+  if (settingsScene.mode == SettingsScene::GameMode::Game)
+    displayTime();
 }
 
 // encodes the position given x and y
