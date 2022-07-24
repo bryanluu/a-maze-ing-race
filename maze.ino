@@ -283,7 +283,7 @@ class StartScene : public Scene
 const char StartScene::textPlayer[] PROGMEM = "You";
 const char StartScene::textStart[] PROGMEM = "Start";
 const char StartScene::textWall[] PROGMEM = "Wall";
-const char StartScene::textFinish[] PROGMEM = "End";
+const char StartScene::textFinish[] PROGMEM = "Exit";
 const char StartScene::textHint[] PROGMEM = "Hint";
 const char StartScene::textFood[] PROGMEM = "Food";
 const char StartScene::textTime[] PROGMEM = "Time";
