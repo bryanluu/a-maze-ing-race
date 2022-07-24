@@ -59,6 +59,7 @@ byte mazeHeight = 5;
 #define WHITE(b) (matrix.ColorHSV(0, SHADE, b, true)) // white at a given brightness
 #define H_RED (HUE(0)) // red hue value
 #define H_GREEN (HUE(120)) // green hue value
+#define H_PURPLE (HUE(300)) // purple hue value
 #define H_BLUE (HUE(240)) // blue hue value
 #define H_YELLOW (HUE(60)) // yellow hue value
 #define SEEN_WALL_COLOR (matrix.ColorHSV(H_RED, COLOR, SEEN_BRIGHTNESS, true))
@@ -72,6 +73,7 @@ byte mazeHeight = 5;
 #define SEEN_SOLUTION_COLOR (matrix.ColorHSV(H_YELLOW, COLOR, SEEN_BRIGHTNESS, true))
 #define NEAR_SOLUTION_COLOR (matrix.ColorHSV(H_YELLOW, COLOR, NEAR_BRIGHTNESS, true))
 #define PLAYER_COLOR (WHITE(NEAR_BRIGHTNESS))
+#define TIME_COLOR (matrix.ColorHSV(H_PURPLE, COLOR, NEAR_BRIGHTNESS, true))
 #define SETTINGS_COLOR (matrix.ColorHSV(H_BLUE, COLOR, 100, true))
 #define SETTINGS_UNSELECTED_TEXT_COLOR (matrix.ColorHSV(H_YELLOW, COLOR, SEEN_BRIGHTNESS, true))
 #define SETTINGS_SELECTED_TEXT_COLOR WHITE(NEAR_BRIGHTNESS)
@@ -127,7 +129,7 @@ void readInput(bool strobe = true);
 #define OPTIONS 3
 
 // Start Scene config
-#define START_DURATION 5000 // in ms
+#define START_DURATION 6000 // in ms
 #define START_DELAY 150 // in ms
 
 // ########## SCENE CODE ##########
@@ -256,6 +258,7 @@ class StartScene : public Scene
     static const char textWall[] PROGMEM;
     static const char textFinish[] PROGMEM;
     static const char textHint[] PROGMEM;
+    static const char textTime[] PROGMEM;
     unsigned long startTime = 0;
     int16_t textY;
 
@@ -275,6 +278,7 @@ const char StartScene::textStart[] PROGMEM = "Start";
 const char StartScene::textWall[] PROGMEM = "Wall";
 const char StartScene::textFinish[] PROGMEM = "End";
 const char StartScene::textHint[] PROGMEM = "Hint";
+const char StartScene::textTime[] PROGMEM = "Time";
 StartScene startScene = StartScene();
 
 class MazeScene : public Scene
@@ -522,6 +526,8 @@ void StartScene::displayStartScreen()
   matrix.println(textFinish);
   matrix.setTextColor(NEAR_SOLUTION_COLOR);
   matrix.println(textHint);
+  matrix.setTextColor(TIME_COLOR);
+  matrix.println(textTime);
 }
 
 // ########## MAZE CODE ##########
