@@ -38,8 +38,8 @@ RGBmatrixPanel matrix(A, B, C, D, CLK, LAT, OE, true);
 
 // ########## MAIN CODE ##########
 
-#define MATRIX_WIDTH 31
-#define MATRIX_HEIGHT 31
+#define MATRIX_WIDTH 32
+#define MATRIX_HEIGHT 32
 #define MAZE(p) (((p) - 1)/2) // conversion from matrix coordinates to maze coordinates
 #define MATRIX(p) (2*(p) + 1) // conversion from maze coordinates to matrix coordinates
 #define MATRIX_INTERPOLATE(p, q) ((p) + (q) + 1) // interpolate between maze coordinates in matrix space
@@ -101,6 +101,10 @@ enum Direction : int
 #define HINT_CHAR 'H'
 #define HINT_DURATION 3000 // in ms
 #define HINTS 3            // number of hints player has
+
+// game parameters
+#define TIME_PIXELS (63)
+#define GAME_TIME (300 * 1000) // in ms
 
 // input parameters
 #define HORIZONTAL_PIN A5
@@ -289,6 +293,7 @@ class MazeScene : public Scene
     uint16_t grid[MATRIX_HEIGHT][MATRIX_WIDTH]; // color of each pixel in matrix
     bool seen[MATRIX_HEIGHT][MATRIX_WIDTH]; // which pixels the player has seen
     unsigned long lastHintTime = -HINT_DURATION;
+    unsigned long startTime = 0;
     byte hints = HINTS; // number of hints
     node * startNode;
     node * endNode;
@@ -314,6 +319,7 @@ class MazeScene : public Scene
     bool playerHasFinished();
     bool isBorder(byte r, byte c);
     void displayMaze();
+    void displayTime();
 
   public:
     MazeScene() : Scene()
@@ -540,6 +546,8 @@ void MazeScene::start()
   buttonPressed = false;
   hints = HINTS;
   lastHintTime = -HINT_DURATION;
+  startTime = millis();
+
   switch (settingsScene.visibility)
   {
   case SettingsScene::Visibility::Low:
@@ -578,6 +586,7 @@ void MazeScene::run()
   colorFinish();
   colorPlayer();
   displayMaze();
+  displayTime();
 }
 
 // encodes the position given x and y
@@ -975,6 +984,43 @@ void MazeScene::displayMaze()
       colOffset = (MATRIX_WIDTH - MATRIX(mazeWidth))/2;
       matrix.drawPixel(c + colOffset, r + rowOffset, color);
     }
+  }
+}
+
+/**
+ * @brief Display the time left in the game
+ * 
+ */
+void MazeScene::displayTime()
+{
+  byte pixelsPassed = ((TIME_PIXELS) * (currentTime - startTime))/GAME_TIME; 
+  byte r, c;
+  
+  if (pixelsPassed >= TIME_PIXELS)
+  {
+    endScene.start();
+  }
+  
+  // draw time track
+  for (byte i = 1; i <= TIME_PIXELS; i++)
+  {
+    if (i < MATRIX_HEIGHT)
+    {
+      r = i;
+      c = MATRIX_WIDTH;
+    }
+    else
+    {
+      r = MATRIX_HEIGHT;
+      c = MATRIX_WIDTH - (i - MATRIX_HEIGHT);
+    }
+
+    if (i <= pixelsPassed)
+      grid[r - 1][c - 1] = BLACK;
+    else
+      grid[r - 1][c - 1] = TIME_COLOR;
+
+    matrix.drawPixel(c - 1, r - 1, grid[r - 1][c - 1]);
   }
 }
 
