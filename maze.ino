@@ -33,8 +33,6 @@ RGBmatrixPanel matrix(A, B, C, D, CLK, LAT, OE, true);
 
 // Similar to F(), but for PROGMEM string pointers rather than literals
 #define F2(progmem_ptr) (const __FlashStringHelper *)progmem_ptr
-#define CONGRATS_PAUSE_TIME 1000 // in ms
-#define CONGRATS_SCROLL_DELAY 1 // in ms
 
 // ########## MAIN CODE ##########
 
@@ -141,6 +139,11 @@ void readInput(bool strobe = true);
 // Start Scene config
 #define START_DURATION 6000 // in ms
 #define START_DELAY 150 // in ms
+
+// End Scene config
+#define CONGRATS_PAUSE_TIME 1000 // in ms
+#define CONGRATS_SCROLL_DELAY 5 // in ms
+#define SCORE_DISPLAY_TIME 3000 // in ms
 
 // ########## SCENE CODE ##########
 
@@ -307,7 +310,6 @@ class MazeScene : public Scene
     node * endNode;
     byte playerX, playerY;
     int visibility;
-    byte score;
 
     typedef std::vector<node *> vertex_list;
     vertex_list snacks; 
@@ -338,6 +340,8 @@ class MazeScene : public Scene
     void endGame();
 
   public:
+    byte score;
+
     MazeScene() : Scene()
     {
       name = "Maze";
@@ -351,11 +355,13 @@ MazeScene mazeScene = MazeScene();
 class EndScene : public Scene
 {
   private:
-    bool displayFinishScreen();
+    void displayFinishScreen();
+    void displayScore();
     static const char congrats[] PROGMEM;
     static int16_t textMin;
     int16_t textX = matrix.width();
     int16_t hue = 0;
+    unsigned long startTime;
 
   public:
     EndScene() : Scene()
@@ -366,7 +372,7 @@ class EndScene : public Scene
     void start();
     void run();
 };
-const char EndScene::congrats[] PROGMEM = "You won, congratulations!!!"; // Congratulations text
+const char EndScene::congrats[] PROGMEM = "Done!!!"; // Congratulations text
 int16_t EndScene::textMin =  (int16_t)sizeof(congrats) * -6;
 EndScene endScene = EndScene();
 
@@ -1487,18 +1493,19 @@ void EndScene::start()
 void EndScene::run()
 {
   Scene::run();
-  bool finished = displayFinishScreen();
-  if (finished)
+  if (textX >= textMin)
+    displayFinishScreen();
+  else if (settingsScene.mode == SettingsScene::GameMode::Game && currentTime - startTime < SCORE_DISPLAY_TIME)
+    displayScore();
+  else
     settingsScene.start();
-  Serial.println(finished);
 }
 
 /**
  * @brief Displays the finishing graphics
  *
- * @return whether the finish screen is done
  */
-bool EndScene::displayFinishScreen()
+void EndScene::displayFinishScreen()
 {
   matrix.setTextColor(matrix.ColorHSV(hue, 255, 255, true));
   matrix.setCursor(textX, matrix.height() / 2 - 4);
@@ -1507,11 +1514,26 @@ bool EndScene::displayFinishScreen()
   if (textX < textMin)
   {
     delay(CONGRATS_PAUSE_TIME);
-    return true;
+    startTime = millis();
+    return;
   }
   hue += 7;
   if (hue >= 1536)
     hue = 0;
   delay(CONGRATS_SCROLL_DELAY);
-  return false;
+  return;
+}
+
+void EndScene::displayScore()
+{
+  matrix.setCursor(2, 2);
+  matrix.setTextColor(SETTINGS_COLOR);
+  matrix.println("Score");
+  matrix.setTextColor(matrix.ColorHSV(hue, 255, 255, true));
+  matrix.setCursor(2, matrix.height() / 2);
+  matrix.print(String(mazeScene.score));
+  hue += 7;
+  if (hue >= 1536)
+    hue = 0;
+  delay(CONGRATS_SCROLL_DELAY);
 }
