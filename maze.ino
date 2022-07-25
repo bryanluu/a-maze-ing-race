@@ -109,6 +109,7 @@ enum Direction : int
 #define SNACK_SCORE 5
 #define EXIT_SCORE 30
 #define MAX_TIME_SCORE 20
+#define HINT_PENALTY 5
 
 // input parameters
 #define HORIZONTAL_PIN A5
@@ -1478,7 +1479,10 @@ void MazeScene::useHint()
     return;
 
   if (--hints <= HINTS)
+  {
+    score = max(score - HINT_PENALTY, 0);
     lastHintTime = currentTime;
+  }
 }
 
 // ########## END CODE ##########
