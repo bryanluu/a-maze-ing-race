@@ -318,6 +318,7 @@ class MazeScene : public Scene
     bool isNearPlayer(byte x, byte y);
     bool isOnMaze(byte x, byte y);
     void movePlayer();
+    void eatSnack(vertex_list::iterator pos);
     void useHint();
     void colorMaze();
     void colorStart();
@@ -1401,7 +1402,30 @@ void MazeScene::movePlayer()
     playerY = y;
 
     Serial.println(String(playerX) + "," + String(playerY));
+
+    for (auto it = snacks.begin(); it != snacks.end(); it++)
+    {
+      node * snack = *it;
+      x = MATRIX(GET_X(snack->pos));
+      y = MATRIX(GET_Y(snack->pos));
+      if (playerX == x && playerY == y)
+      {
+        Serial.println("  " + String(x) + "," + String(y));
+        eatSnack(it);
+        break;
+      }
+    }
   }
+}
+
+/**
+ * @brief Eat the snack at the given position
+ * 
+ * @param pos the position of the snack in the snacks
+ */
+void MazeScene::eatSnack(MazeScene::vertex_list::iterator pos)
+{
+  snacks.erase(pos);
 }
 
 /**
