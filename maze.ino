@@ -108,6 +108,9 @@ enum Direction : int
 #define TIME_PIXELS (63)
 #define GAME_TIME (300 * 1000) // in ms
 #define SNACKS 10
+#define SNACK_SCORE 5
+#define EXIT_SCORE 30
+#define MAX_TIME_SCORE 20
 
 // input parameters
 #define HORIZONTAL_PIN A5
@@ -304,6 +307,7 @@ class MazeScene : public Scene
     node * endNode;
     byte playerX, playerY;
     int visibility;
+    byte score;
 
     typedef std::vector<node *> vertex_list;
     vertex_list snacks; 
@@ -331,6 +335,7 @@ class MazeScene : public Scene
     bool isBorder(byte r, byte c);
     void displayMaze();
     void displayTime();
+    void endGame();
 
   public:
     MazeScene() : Scene()
@@ -563,6 +568,7 @@ void MazeScene::start()
   hints = HINTS;
   lastHintTime = -HINT_DURATION;
   startTime = millis();
+  score = 0;
 
   switch (settingsScene.visibility)
   {
@@ -584,7 +590,13 @@ void MazeScene::start()
 void MazeScene::run()
 {
   if (playerHasFinished())
-    endScene.start();
+  {
+    score += EXIT_SCORE;
+    byte timeBonus = (MAX_TIME_SCORE * (startTime + GAME_TIME - currentTime))/GAME_TIME;
+    Serial.println("Time Bonus: " + String(timeBonus));
+    score += timeBonus;
+    endGame();
+  }
 
   Scene::run();
   readInput();
@@ -1036,7 +1048,7 @@ void MazeScene::displayTime()
   
   if (pixelsPassed >= TIME_PIXELS)
   {
-    endScene.start();
+    endGame();
   }
   
   // draw time track
@@ -1283,6 +1295,16 @@ void MazeScene::colorPlayer()
 }
 
 /**
+ * @brief End the game
+ * 
+ */
+void MazeScene::endGame()
+{
+  Serial.println("Score: " + String(score));
+  endScene.start();
+}
+
+/**
  * @brief Returns the opposing direction
  * 
  * @param dir a given direction
@@ -1426,6 +1448,7 @@ void MazeScene::movePlayer()
 void MazeScene::eatSnack(MazeScene::vertex_list::iterator pos)
 {
   snacks.erase(pos);
+  score += SNACK_SCORE;
 }
 
 /**
