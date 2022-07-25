@@ -105,10 +105,10 @@ enum Direction : int
 // game parameters
 #define TIME_PIXELS (63)
 #define GAME_TIME (300 * 1000) // in ms
-#define SNACKS 10
-#define SNACK_SCORE 5
-#define EXIT_SCORE 30
-#define MAX_TIME_SCORE 20
+#define SNACKS 15
+#define SNACK_SCORE 2
+#define EXIT_SCORE 20
+#define MAX_TIME_SCORE 50
 #define HINT_PENALTY 5
 
 // input parameters
