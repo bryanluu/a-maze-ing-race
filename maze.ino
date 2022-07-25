@@ -104,9 +104,10 @@ enum Direction : int
 
 // game parameters
 #define TIME_PIXELS (63)
-#define GAME_TIME (300 * 1000) // in ms
+#define GAME_TIME (120 * 1000) // in ms
 #define SNACKS 15
 #define SNACK_SCORE 2
+#define SNACK_BOOST 1000 // in ms
 #define EXIT_SCORE 20
 #define MAX_TIME_SCORE 50
 #define HINT_PENALTY 5
@@ -1456,6 +1457,7 @@ void MazeScene::eatSnack(MazeScene::vertex_list::iterator pos)
 {
   snacks.erase(pos);
   score += SNACK_SCORE;
+  startTime = min(startTime + SNACK_BOOST, currentTime);
 }
 
 /**
