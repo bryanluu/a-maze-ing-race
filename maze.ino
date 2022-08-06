@@ -104,12 +104,13 @@ enum Direction : int
 
 // game parameters
 #define TIME_PIXELS (63)
-#define GAME_TIME (120 * 1000) // in ms
+#define GAME_TIME (180 * 1000) // in ms
 #define SNACKS 15
 #define SNACK_SCORE 2
 #define SNACK_BOOST 1000 // in ms
 #define EXIT_SCORE 20
 #define MAX_TIME_SCORE 50
+#define MAX_TIME_BUFFER (90 * 1000) // in ms, the time after game start for player to achieve MAX_TIME_SCORE
 #define HINT_PENALTY 5
 
 // input parameters
@@ -600,7 +601,7 @@ void MazeScene::run()
   if (playerHasFinished())
   {
     score += EXIT_SCORE;
-    byte timeBonus = (MAX_TIME_SCORE * (startTime + GAME_TIME - currentTime))/GAME_TIME;
+    byte timeBonus = (MAX_TIME_SCORE * (startTime + MAX_TIME_BUFFER + GAME_TIME - currentTime))/GAME_TIME;
     Serial.println("Time Bonus: " + String(timeBonus));
     score += timeBonus;
     endGame();
