@@ -21,6 +21,7 @@ The object of the *Game* is to collect as many tokens as possible and escape the
 
 ## Custom Settings
 In this mode you can specify how you'd like to play the game. In all custom games, there are no tokens and no time-limit.
+
 [<img src="https://user-images.githubusercontent.com/5415113/184574596-66785c50-1895-4bea-b496-ec3354b62889.jpeg" width=300 />](https://user-images.githubusercontent.com/5415113/184574596-66785c50-1895-4bea-b496-ec3354b62889.jpeg)
 
 
